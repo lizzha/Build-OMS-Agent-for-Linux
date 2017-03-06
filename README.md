@@ -9,7 +9,6 @@
 - [Preparing system tests](#preparing-system-tests)
 - [Building omsagent](#building-omsagent)
 - [Troubleshooting](#troubleshooting)
-- [Code of Conduct](#code-of-conduct)
 
 If you are an active contributor to the OMS-Agent project, you should
 [set up your system]
@@ -53,21 +52,11 @@ program). The bind-utils package isn't otherwise necessary.
 
 - On CentOS 7.x
 ```
- sudo yum install git bind-utils bison gcc-c++ rpm-devel pam-devel openssl-devel rpm-build mysql-devel
+ sudo yum install git bind-utils ruby bison gcc-c++ rpm-devel pam-devel openssl-devel rpm-build mysql-devel
 ```
 - On Ubuntu 14.04
 ```
- sudo apt-get install git pkg-config make bison g++ rpm librpm-dev libpam0g-dev libssl-dev libmysqlclient-dev
-```
-Install minimum version of Ruby (the system must have 1.9 or higher, but 2.2.6 is recommended). This is needed for all systems. This can be done with the following commands:
-```
- wget https://cache.ruby-lang.org/pub/ruby/2.2/ruby-2.2.6.tar.gz
- tar xzvf ruby-2.2.6.tar.gz
- cd ruby-2.2.6
- ./configure
- make
- sudo make install
- $(which ruby) --version  # verify that this prints 2.2.6
+ sudo apt-get install git pkg-config make ruby bison g++ rpm librpm-dev libpam0g-dev libssl-dev libmysqlclient-dev
 ```
 
 - Notes on other platforms
@@ -184,12 +173,3 @@ While this points to an issue where your system version of Ruby is too old
 issue is that you didn't clone the repository recursively. Please read
 [the section on cloning the repositories](#cloning-the-repositories) for
 details on how to clone the repository.
-
-### Code of Conduct
-
-This project has adopted the [Microsoft Open Source Code of Conduct]
-(https://opensource.microsoft.com/codeofconduct/).  For more
-information see the [Code of Conduct FAQ]
-(https://opensource.microsoft.com/codeofconduct/faq/) or contact
-[opencode@microsoft.com](mailto:opencode@microsoft.com) with any
-additional questions or comments.

@@ -1,0 +1,96 @@
+diff --git a/source/code/include/scxcorelib/scxlogpolicy.h b/source/code/include/scxcorelib/scxlogpolicy.h
+index f322783..a2f4da3 100644
+--- a/source/code/include/scxcorelib/scxlogpolicy.h
++++ b/source/code/include/scxcorelib/scxlogpolicy.h
+@@ -46,7 +46,7 @@ namespace SCXCoreLib
+ #if defined(WIN32)
+             return SCXFilePath(L"C:\\scxlog.conf");
+ #elif defined(SCX_UNIX)
+-            return SCXFilePath(L"/etc/opt/microsoft/scx/conf/scxlog.conf");
++            return SCXFilePath(L"/var/vcap/packages/scx/etc/conf/scxlog.conf");
+ #endif
+         }
+ 
+@@ -61,7 +61,7 @@ namespace SCXCoreLib
+             return SCXFilePath(L"C:\\scx.log");
+ #elif defined(SCX_UNIX)
+             SCXUser user;
+-            SCXFilePath filepath(L"/var/opt/microsoft/scx/log/scx.log");
++            SCXFilePath filepath(L"/var/vcap/sys/log/scx/scx.log");
+             if (!user.IsRoot())
+             {
+                 filepath.AppendDirectory(user.GetName());
+diff --git a/source/code/scxcorelib/util/persist/scxfilepersistmedia.cpp b/source/code/scxcorelib/util/persist/scxfilepersistmedia.cpp
+index 0ab6296..0af1edb 100644
+--- a/source/code/scxcorelib/util/persist/scxfilepersistmedia.cpp
++++ b/source/code/scxcorelib/util/persist/scxfilepersistmedia.cpp
+@@ -28,7 +28,7 @@ namespace SCXCoreLib {
+         Default constructor.
+     */
+     SCXFilePersistMedia::SCXFilePersistMedia() :
+-        m_BasePath(L"/var/opt/microsoft/scx/lib/state/")
++        m_BasePath(L"/var/vcap/packages/scx/var/lib/state/")
+     {
+         AddUserNameToBasePath();
+     }
+diff --git a/source/code/scxsystemlib/common/scxostypeinfo.cpp b/source/code/scxsystemlib/common/scxostypeinfo.cpp
+index 264c8ea..13764ea 100644
+--- a/source/code/scxsystemlib/common/scxostypeinfo.cpp
++++ b/source/code/scxsystemlib/common/scxostypeinfo.cpp
+@@ -117,7 +117,7 @@ namespace SCXSystemLib
+ 
+     const wstring SCXOSTypeInfoDependencies::getConfigPath() const
+     {
+-        return L"/etc/opt/microsoft/scx/conf/scxconfig.conf";
++        return L"/var/vcap/packages/scx/etc/conf/scxconfig.conf";
+     }
+ #endif // defined(PF_DISTRO_ULINUX)
+ 
+diff --git a/source/code/scxsystemlib/common/scxsysteminfo.cpp b/source/code/scxsystemlib/common/scxsysteminfo.cpp
+index f6592f7..f2fd661 100644
+--- a/source/code/scxsystemlib/common/scxsysteminfo.cpp
++++ b/source/code/scxsystemlib/common/scxsysteminfo.cpp
+@@ -50,7 +50,7 @@
+ // To use sudo via RunAs provider, we must have our kit installed.  Since our
+ // kit now creates a sudo link, we can depend on that.
+ 
+-const std::wstring s_defaultSudoPath = L"/etc/opt/microsoft/scx/conf/sudodir/sudo";
++const std::wstring s_defaultSudoPath = L"/var/vcap/packages/scx/etc/conf/sudodir/sudo";
+ 
+ 
+ using namespace std;
+diff --git a/test/code/scxsystemlib/common/scxsysteminfo_test.cpp b/test/code/scxsystemlib/common/scxsysteminfo_test.cpp
+index f4d84e1..28e1e25 100644
+--- a/test/code/scxsystemlib/common/scxsysteminfo_test.cpp
++++ b/test/code/scxsystemlib/common/scxsysteminfo_test.cpp
+@@ -21,9 +21,9 @@
+ 
+ // Support for TestGetDefaultSudoPath()
+ //
+-// Assume /etc/opt/microsoft/scx/conf/sudodir/sudo for all platforms.
++// Assume /var/vcap/packages/scx/etc/conf/sudodir/sudo for all platforms.
+ 
+-const std::wstring s_defaultSudoPath = L"/etc/opt/microsoft/scx/conf/sudodir/sudo";
++const std::wstring s_defaultSudoPath = L"/var/vcap/packages/scx/etc/conf/sudodir/sudo";
+ 
+ 
+ using namespace SCXCoreLib;
+diff --git a/test/code/scxsystemlib/software/dpkg_status_test b/test/code/scxsystemlib/software/dpkg_status_test
+index a4e2909..43123bf 100644
+--- a/test/code/scxsystemlib/software/dpkg_status_test
++++ b/test/code/scxsystemlib/software/dpkg_status_test
+@@ -2011,10 +2011,10 @@ Config-Version: 1.4.0.820
+ Provides: scx
+ Depends: libc6 (>= 2.3.6), libpam-runtime (>= 0.79-3)
+ Conffiles:
+- /etc/opt/microsoft/scx/conf/cimserver_planned.conf d41d8cd98f00b204e9800998ecf8427e
+- /etc/opt/microsoft/scx/conf/cimserver_current.conf d41d8cd98f00b204e9800998ecf8427e
+- /etc/opt/microsoft/scx/conf/scxlog.conf d41d8cd98f00b204e9800998ecf8427e
+- /etc/opt/microsoft/scx/conf/scxrunas.conf d41d8cd98f00b204e9800998ecf8427e
++ /var/vcap/packages/scx/etc/conf/cimserver_planned.conf d41d8cd98f00b204e9800998ecf8427e
++ /var/vcap/packages/scx/etc/conf/cimserver_current.conf d41d8cd98f00b204e9800998ecf8427e
++ /var/vcap/packages/scx/etc/conf/scxlog.conf d41d8cd98f00b204e9800998ecf8427e
++ /var/vcap/packages/scx/etc/conf/scxrunas.conf d41d8cd98f00b204e9800998ecf8427e
+ Description: Microsoft System Center 2012 Operations Manager for UNIX/Linux agent
+  Microsoft CIM server for System Center 2012 Operations Manager.
+ 

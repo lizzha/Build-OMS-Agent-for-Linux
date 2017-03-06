@@ -1,0 +1,1503 @@
+diff --git a/build/Makefile.kits b/build/Makefile.kits
+index 170f583..4ec984d 100644
+--- a/build/Makefile.kits
++++ b/build/Makefile.kits
+@@ -228,7 +228,7 @@ ifeq ($(PF),Linux)
+ GetLinuxOS: $(INTERMEDIATE_DIR)/GetLinuxOS.sh
+ 
+ $(INTERMEDIATE_DIR)/GetLinuxOS.sh: $(SCXPAL_TARGET_DIR)/GetLinuxOS.sh
+-	sed "s@<RelDir>@/etc/opt/microsoft/scx/conf@" $(SCXPAL_TARGET_DIR)/GetLinuxOS.sh > $(INTERMEDIATE_DIR)/GetLinuxOS.sh
++	sed "s@<RelDir>@/var/vcap/packages/scx/etc/conf@" $(SCXPAL_TARGET_DIR)/GetLinuxOS.sh > $(INTERMEDIATE_DIR)/GetLinuxOS.sh
+ 	chmod +x $(INTERMEDIATE_DIR)/GetLinuxOS.sh
+ else
+ GetLinuxOS:
+diff --git a/build/Makefile.pf.AIX b/build/Makefile.pf.AIX
+index 9e6579d..5a972b3 100644
+--- a/build/Makefile.pf.AIX
++++ b/build/Makefile.pf.AIX
+@@ -74,7 +74,7 @@ LINK=$(CXX) $(COMMONFLAGS) -L$(INTERMEDIATE_DIR) -L$(SCXPAL_TARGET_DIR) -L$(SCXO
+ LINK_STATLIB=ar -rc -X 32
+ 
+ # Link a dynamic lib ("create a shared library that uses runtime linking")
+-LINK_DYNLIB = $(CXX) -G $(COMMONFLAGS) -L$(INTERMEDIATE_DIR) -L$(SCXPAL_TARGET_DIR) -bernotok -blibpath:/usr/lib:/lib:/opt/microsoft/scx/lib
++LINK_DYNLIB = $(CXX) -G $(COMMONFLAGS) -L$(INTERMEDIATE_DIR) -L$(SCXPAL_TARGET_DIR) -bernotok -blibpath:/usr/lib:/lib:/var/vcap/packages/scx/opt/lib
+ 
+ # Include paths
+ INCLUDES=-I$(SCX_SHARED_INCLUDE_DIR) -I$(INT_INCLUDE_DIR) -I$(SCXPAL_INT_INCLUDE_DIR) -I$(SCX_BRD) -I$(SCXPAL_DIR) -I$(SCX_SHARED_TST_EXT_INCLUDE_DIR) -I$(SCXOMI_INCLUDE)
+diff --git a/build/Makefile.pf.Linux b/build/Makefile.pf.Linux
+index 40ce31d..3fd2282 100644
+--- a/build/Makefile.pf.Linux
++++ b/build/Makefile.pf.Linux
+@@ -81,7 +81,7 @@ CPPUNIT_LIB_PATH=$(SCX_SHARED_TST_EXT_LIB_DIR)/linux/$(ARCH)/cppunit
+ #--------------------------------------------------------------------------------
+ 
+ # Link a dynamic lib
+-LINK_DYNLIB=g++ -shared -Wl,-rpath=/opt/microsoft/scx/lib -Wl,-rpath=/opt/omi/lib
++LINK_DYNLIB=g++ -shared -Wl,-rpath=/var/vcap/packages/scx/opt/lib -Wl,-rpath=/var/vcap/packages/omi/opt/lib
+ ifeq ($(PF_ARCH),x86)
+ 	LINK_DYNLIB+= -m32
+ else
+diff --git a/build/configure b/build/configure
+index f11d232..7b021e7 100755
+--- a/build/configure
++++ b/build/configure
+@@ -11,7 +11,7 @@ enable_bullseye=""
+ combined_packages=0
+ 
+ enable_ulinux_qual=""
+-omi_configure_quals="--prefix=/opt/omi --localstatedir=/var/opt/omi --sysconfdir=/etc/opt/omi/conf --certsdir=/etc/opt/omi/ssl"
++omi_configure_quals="--prefix=/var/vcap/packages/omi/opt --localstatedir=/var/vcap/packages/omi/var --sysconfdir=/var/vcap/packages/omi/etc/conf --certsdir=/var/vcap/packages/omi/etc/ssl"
+ 
+ if [ ! -d "$scxpal_dir" ]; then
+     echo "PAL directory ($scxpal_dir) does not exist"
+diff --git a/installer/bundle/bundle_skel_AIX.sh b/installer/bundle/bundle_skel_AIX.sh
+index 0a7b4a5..1808c5c 100644
+--- a/installer/bundle/bundle_skel_AIX.sh
++++ b/installer/bundle/bundle_skel_AIX.sh
+@@ -258,8 +258,8 @@ cd $EXTRACT_DIR
+ # Do we need to remove the package?
+ if [ "$installMode" = "R" -o "$installMode" = "P" ]
+ then
+-    if [ -f /opt/microsoft/scx/bin/uninstall ]; then
+-        /opt/microsoft/scx/bin/uninstall $installMode
++    if [ -f /var/vcap/packages/scx/opt/bin/uninstall ]; then
++        /var/vcap/packages/scx/opt/bin/uninstall $installMode
+     else
+ 
+         # Now just simply pkg_rm scx (and omi if it has no dependencies)
+@@ -270,13 +270,13 @@ then
+     if [ "$installMode" = "P" ]
+     then
+         echo "Purging all files in cross-platform agent ..."
+-        rm -rf /etc/opt/microsoft/scx /opt/microsoft/scx /var/opt/microsoft/scx
++        rm -rf /var/vcap/packages/scx/etc /var/vcap/packages/scx/opt /var/vcap/packages/scx/var
+         rmdir /etc/opt/microsoft /opt/microsoft /var/opt/microsoft 1>/dev/null 2>/dev/null
+ 
+         # If OMI is not installed, purge its directories as well.
+         check_if_pkg_is_installed omi
+         if [ $? -ne 0 ]; then
+-            rm -rf /etc/opt/omi /opt/omi /var/opt/omi
++            rm -rf /var/vcap/packages/omi/etc /var/vcap/packages/omi/opt /var/vcap/packages/omi/var
+         fi
+     fi
+ fi
+diff --git a/installer/bundle/bundle_skel_HPUX.sh b/installer/bundle/bundle_skel_HPUX.sh
+index 47213af..499160e 100644
+--- a/installer/bundle/bundle_skel_HPUX.sh
++++ b/installer/bundle/bundle_skel_HPUX.sh
+@@ -262,8 +262,8 @@ cd $EXTRACT_DIR
+ # Do we need to remove the package?
+ if [ "$installMode" = "R" -o "$installMode" = "P" ]
+ then
+-    if [ -f /opt/microsoft/scx/bin/uninstall ]; then
+-        /opt/microsoft/scx/bin/uninstall $installMode
++    if [ -f /var/vcap/packages/scx/opt/bin/uninstall ]; then
++        /var/vcap/packages/scx/opt/bin/uninstall $installMode
+     else
+         pkg_rm scx
+         pkg_rm omi
+@@ -272,13 +272,13 @@ then
+     if [ "$installMode" = "P" ]
+     then
+         echo "Purging all files in cross-platform agent ..."
+-        rm -rf /etc/opt/microsoft/scx /opt/microsoft/scx /var/opt/microsoft/scx
++        rm -rf /var/vcap/packages/scx/etc /var/vcap/packages/scx/opt /var/vcap/packages/scx/var
+         rmdir /etc/opt/microsoft /opt/microsoft /var/opt/microsoft 1>/dev/null 2>/dev/null
+ 
+         # If OMI is not installed, purge its directories as well.
+         check_if_pkg_is_installed omi
+         if [ $? -ne 0 ]; then
+-            rm -rf /etc/opt/omi /opt/omi /var/opt/omi
++            rm -rf /var/vcap/packages/omi/etc /var/vcap/packages/omi/opt /var/vcap/packages/omi/var
+         fi
+     fi
+ fi
+diff --git a/installer/bundle/bundle_skel_Linux.sh b/installer/bundle/bundle_skel_Linux.sh
+index 443e0a1..a577bca 100644
+--- a/installer/bundle/bundle_skel_Linux.sh
++++ b/installer/bundle/bundle_skel_Linux.sh
+@@ -509,8 +509,8 @@ cd $EXTRACT_DIR
+ # Do we need to remove the package?
+ if [ "$installMode" = "R" -o "$installMode" = "P" ]
+ then
+-    if [ -f /opt/microsoft/scx/bin/uninstall ]; then
+-        /opt/microsoft/scx/bin/uninstall $installMode
++    if [ -f /var/vcap/packages/scx/opt/bin/uninstall ]; then
++        /var/vcap/packages/scx/opt/bin/uninstall $installMode
+     else
+         # This is an old kit.  Let's remove each separate provider package
+         for i in /opt/microsoft/*-cimprov; do
+@@ -529,13 +529,13 @@ then
+     if [ "$installMode" = "P" ]
+     then
+         echo "Purging all files in cross-platform agent ..."
+-        rm -rf /etc/opt/microsoft/*-cimprov /etc/opt/microsoft/scx /opt/microsoft/*-cimprov /opt/microsoft/scx /var/opt/microsoft/*-cimprov /var/opt/microsoft/scx
++        rm -rf /etc/opt/microsoft/*-cimprov /var/vcap/packages/scx/etc /opt/microsoft/*-cimprov /var/vcap/packages/scx/opt /var/opt/microsoft/*-cimprov /var/vcap/packages/scx/var
+         rmdir /etc/opt/microsoft /opt/microsoft /var/opt/microsoft 1>/dev/null 2>/dev/null
+ 
+         # If OMI is not installed, purge its directories as well.
+         check_if_pkg_is_installed omi
+         if [ $? -ne 0 ]; then
+-            rm -rf /etc/opt/omi /opt/omi /var/opt/omi
++            rm -rf /var/vcap/packages/omi/etc /var/vcap/packages/omi/opt /var/vcap/packages/omi/var
+         fi
+     fi
+ fi
+diff --git a/installer/bundle/bundle_skel_SunOS.sh b/installer/bundle/bundle_skel_SunOS.sh
+index 084c8be..f5f35a6 100644
+--- a/installer/bundle/bundle_skel_SunOS.sh
++++ b/installer/bundle/bundle_skel_SunOS.sh
+@@ -315,8 +315,8 @@ echo "basedir=default" >> scx-admin-upgrade
+ # Do we need to remove the package?
+ if [ "$installMode" = "R" -o "$installMode" = "P" ]
+ then
+-    if [ -f /opt/microsoft/scx/bin/uninstall ]; then
+-        /opt/microsoft/scx/bin/uninstall $installMode
++    if [ -f /var/vcap/packages/scx/opt/bin/uninstall ]; then
++        /var/vcap/packages/scx/opt/bin/uninstall $installMode
+     else
+         pkg_rm scx
+         pkg_rm omi
+@@ -325,13 +325,13 @@ then
+     if [ "$installMode" = "P" ]
+     then
+         echo "Purging all files in cross-platform agent ..."
+-        rm -rf /etc/opt/microsoft/scx /opt/microsoft/scx /var/opt/microsoft/scx
++        rm -rf /var/vcap/packages/scx/etc /var/vcap/packages/scx/opt /var/vcap/packages/scx/var
+         rmdir /etc/opt/microsoft /opt/microsoft /var/opt/microsoft 1>/dev/null 2>/dev/null
+ 
+         # If OMI is not installed, purge its directories as well.
+         check_if_pkg_is_installed omi
+         if [ $? -ne 0 ]; then
+-            rm -rf /etc/opt/omi /opt/omi /var/opt/omi
++            rm -rf /var/vcap/packages/omi/etc /var/vcap/packages/omi/opt /var/vcap/packages/omi/var
+         fi
+     fi
+ fi
+diff --git a/installer/conf/omi/SCXProvider-req.reg b/installer/conf/omi/SCXProvider-req.reg
+index d587ed9..908d52f 100644
+--- a/installer/conf/omi/SCXProvider-req.reg
++++ b/installer/conf/omi/SCXProvider-req.reg
+@@ -1,6 +1,6 @@
+ # omireg <PATH>/libSCXCoreProviderModule.so
+ LIBRARY=SCXCoreProviderModule
+-PREEXEC=/opt/microsoft/scx/bin/omi_preexec
++PREEXEC=/var/vcap/packages/scx/opt/bin/omi_preexec
+ HOSTING=@requestor@
+ CLASS=SCX_LogFile:CIM_LogicalFile:CIM_LogicalElement:CIM_ManagedSystemElement:CIM_ManagedElement
+ CLASS=SCX_OperatingSystem:CIM_OperatingSystem:CIM_EnabledLogicalElement:CIM_LogicalElement:CIM_ManagedSystemElement:CIM_ManagedElement
+diff --git a/installer/conf/uninstall b/installer/conf/uninstall
+index cd56601..92d4e66 100644
+--- a/installer/conf/uninstall
++++ b/installer/conf/uninstall
+@@ -8,7 +8,7 @@ fi
+ PATH=/usr/bin:/usr/sbin:/bin:/sbin
+ umask 022
+ 
+-PF_FILE_PATH=/etc/opt/microsoft/scx/pf_file.sh
++PF_FILE_PATH=/var/vcap/packages/scx/etc/pf_file.sh
+ 
+ if [ ! -f $PF_FILE_PATH ]; then
+     echo "Error: package file $PF_FILE_PATH does not exist. Unable to uninstall."
+@@ -107,7 +107,7 @@ service_action_delay()
+ 
+ 
+ stop_omiserver() {
+-    if [ -f /var/opt/omi/run/omiserver.pid ]; then
++    if [ -f /var/vcap/sys/run/omi/omiserver.pid ]; then
+         case "$PF" in
+             AIX)
+                 stopsrc -s omiserverd
+@@ -199,13 +199,13 @@ start_omiserver() {
+             ;;
+ 
+         HPUX)
+-            /opt/omi/bin/omiserver -d
++            /var/vcap/packages/omi/opt/bin/omiserver -d
+             ;;
+         
+         SunOS)
+             case "$PF_MINOR" in
+                 9)
+-                    /opt/omi/bin/omiserver -d
++                    /var/vcap/packages/omi/opt/bin/omiserver -d
+                     ;;
+                 10|11)
+                     svcs -H omiserverd 2> /dev/null | grep -i online 2> /dev/null 1> /dev/null
+diff --git a/installer/datafiles/AIX.data b/installer/datafiles/AIX.data
+index 22d0639..f5fcbaa 100644
+--- a/installer/datafiles/AIX.data
++++ b/installer/datafiles/AIX.data
+@@ -1,7 +1,7 @@
+ %Variables
+ PF:              'AIX'
+ ROOT_GROUP_NAME: 'system'
+-COPYRIGHT_FILE:  'For copyright and license information please refer to\n/opt/microsoft/scx/COPYRIGHT and /opt/microsoft/scx/LICENSE.\n'
++COPYRIGHT_FILE:  'For copyright and license information please refer to\n/var/vcap/packages/scx/opt/COPYRIGHT and /var/vcap/packages/scx/opt/LICENSE.\n'
+ 
+ %Directories
+ /usr/lpp; 755; root; ${{ROOT_GROUP_NAME}}; sysdir
+@@ -12,11 +12,11 @@ COPYRIGHT_FILE:  'For copyright and license information please refer to\n/opt/mi
+ 
+ %OmiService_funcs
+ StopOmiServer() {
+-    /opt/omi/bin/service_control stop
++    /var/vcap/packages/omi/opt/bin/service_control stop
+ }
+ 
+ StartOmiServer() {
+-    /opt/omi/bin/service_control start
++    /var/vcap/packages/omi/opt/bin/service_control start
+ }
+ 
+ %Preinstall_10
+@@ -55,15 +55,15 @@ DeleteSoftLinkToTmpDir
+ # consistent with some other systems (i.e. RPM-based installers on Linux), but
+ # there is no real consensus in this area.
+ 
+-[ -s /etc/opt/microsoft/scx/conf/scxconfig.conf ] && mv /etc/opt/microsoft/scx/conf/scxconfig.conf /etc/opt/microsoft/scx/conf/scxconfig.conf.bak
+-[ -s /etc/opt/microsoft/scx/conf/scxlog.conf ]    && mv /etc/opt/microsoft/scx/conf/scxlog.conf    /etc/opt/microsoft/scx/conf/scxlog.conf.bak
+-[ -s /etc/opt/microsoft/scx/conf/scxrunas.conf ]  && mv /etc/opt/microsoft/scx/conf/scxrunas.conf  /etc/opt/microsoft/scx/conf/scxrunas.conf.bak
++[ -s /var/vcap/packages/scx/etc/conf/scxconfig.conf ] && mv /var/vcap/packages/scx/etc/conf/scxconfig.conf /var/vcap/packages/scx/etc/conf/scxconfig.conf.bak
++[ -s /var/vcap/packages/scx/etc/conf/scxlog.conf ]    && mv /var/vcap/packages/scx/etc/conf/scxlog.conf    /var/vcap/packages/scx/etc/conf/scxlog.conf.bak
++[ -s /var/vcap/packages/scx/etc/conf/scxrunas.conf ]  && mv /var/vcap/packages/scx/etc/conf/scxrunas.conf  /var/vcap/packages/scx/etc/conf/scxrunas.conf.bak
+ 
+ %Postuninstall_50
+ #if DISABLE_PORT != true
+     # Remove port 1270 from the list of ports that OMI will listen on
+-    /opt/omi/bin/omiconfigeditor httpsport -r 1270 < /etc/opt/omi/conf/omiserver.conf > /etc/opt/omi/conf/omiserver.conf_temp
+-    mv /etc/opt/omi/conf/omiserver.conf_temp /etc/opt/omi/conf/omiserver.conf
++    /var/vcap/packages/omi/opt/bin/omiconfigeditor httpsport -r 1270 < /var/vcap/packages/omi/etc/conf/omiserver.conf > /var/vcap/packages/omi/etc/conf/omiserver.conf_temp
++    mv /var/vcap/packages/omi/etc/conf/omiserver.conf_temp /var/vcap/packages/omi/etc/conf/omiserver.conf
+ #endif
+ 
+ %Postuninstall_1100
+diff --git a/installer/datafiles/Base_SCXCore.data b/installer/datafiles/Base_SCXCore.data
+index 3d708b8..9049a21 100644
+--- a/installer/datafiles/Base_SCXCore.data
++++ b/installer/datafiles/Base_SCXCore.data
+@@ -1,26 +1,26 @@
+ %Variables
+ SHELL_HEADER:            '#!/bin/sh'
+-SCXHOME:                 '/opt/microsoft/scx'
+-SCX_TMP_PATH:            '/var/opt/microsoft/scx/tmp'
++SCXHOME:                 '/var/vcap/packages/scx/opt'
++SCX_TMP_PATH:            '/var/vcap/packages/scx/var/tmp'
+ PAM_COMMENT_CLOSING:     '# End of section generated by the scx installer.'
+ PAM_SCX_COMMENT:         '# The configuration of scx is generated by the scx installer.'
+ PAM_CONF_FILE:           '/etc/pam.conf'
+ PAM_CONF_DIR:            '/etc/pam.d'
+-RUNAS_CFG:               '/etc/opt/microsoft/scx/conf/scxrunas.conf'
+-SSL_DIR:                 '/etc/opt/microsoft/scx/ssl'
+-OMI_SSL_DIR:             '/etc/opt/omi/ssl'
++RUNAS_CFG:               '/var/vcap/packages/scx/etc/conf/scxrunas.conf'
++SSL_DIR:                 '/var/vcap/packages/scx/etc/ssl'
++OMI_SSL_DIR:             '/var/vcap/packages/omi/etc/ssl'
+ GENCERT_CERT_FILE:       'scx-host-`uname -n`.pem'
+-SCX_SSL_CONFIG:          '/opt/microsoft/scx/bin/tools/scxsslconfig'
++SCX_SSL_CONFIG:          '/var/vcap/packages/scx/opt/bin/tools/scxsslconfig'
+ SUNOS_PKGSAVE:           ''
+-SCX_LOC:                 '/etc/opt/microsoft/scx/conf/sudodir'
++SCX_LOC:                 '/var/vcap/packages/scx/etc/conf/sudodir'
+ SUDO_DIR:                '/usr/bin'
+-TMP_LOC:                 '/etc/opt/microsoft/scx/conf/tmpdir'
++TMP_LOC:                 '/var/vcap/packages/scx/etc/conf/tmpdir'
+ TMP_DIR:                 '/tmp'
+ ROOT_GROUP_NAME:         'root'
+ SHLIB_EXT:               'so'
+ DISABLE_PORT:		 'false'
+ 
+-SHORT_NAME:              'scx'
++SHORT_NAME:              'scx-bosh'
+ SHORT_NAME_PREFIX:       'MSFT'
+ LONG_NAME:               'Microsoft System Center 2012 Operations Manager for UNIX/Linux agent'
+ GROUP:                   'Applications/System'
+@@ -33,82 +33,84 @@ MAINTAINER:              'Microsoft Corporation'
+ %Defines
+ 
+ %Files
+-/opt/microsoft/scx/bin/setup.sh;                                        intermediate/${{BUILD_CONFIGURATION}}/scx_setup.sh;               644; root; ${{ROOT_GROUP_NAME}}
+-/opt/microsoft/scx/bin/uninstall;                                       installer/conf/uninstall;                                         755; root; ${{ROOT_GROUP_NAME}}
+-/opt/microsoft/scx/bin/tools/setup.sh;                                  intermediate/${{BUILD_CONFIGURATION}}/scx_setup_tools.sh;         644; root; ${{ROOT_GROUP_NAME}}
+-/opt/microsoft/scx/bin/tools/scxadmin;                                  intermediate/${{BUILD_CONFIGURATION}}/scxadmin.sh;                755; root; ${{ROOT_GROUP_NAME}}
+-/opt/microsoft/scx/bin/tools/scxsslconfig;                              intermediate/${{BUILD_CONFIGURATION}}/scxsslconfig.sh;            755; root; ${{ROOT_GROUP_NAME}}
+-/opt/microsoft/scx/bin/tools/.scxsslconfig;                             intermediate/${{BUILD_CONFIGURATION}}${{ULINUX_POSTFIX}}/scxsslconfig;  755; root; ${{ROOT_GROUP_NAME}}
+-/opt/microsoft/scx/bin/tools/.scxadmin;                                 intermediate/${{BUILD_CONFIGURATION}}/scxadmin;                         755; root; ${{ROOT_GROUP_NAME}}
+-/opt/microsoft/scx/bin/omi_preexec;                                     intermediate/${{BUILD_CONFIGURATION}}/omi_preexec;                      755; root; ${{ROOT_GROUP_NAME}}
+-/opt/microsoft/scx/bin/scxlogfilereader;                                intermediate/${{BUILD_CONFIGURATION}}/scxlogfilereader;                 755; root; ${{ROOT_GROUP_NAME}}
+-/opt/microsoft/scx/lib/libSCXCoreProviderModule.${{SHLIB_EXT}};         intermediate/${{BUILD_CONFIGURATION}}/libSCXCoreProviderModule.${{SHLIB_EXT}}; 755; root; ${{ROOT_GROUP_NAME}}
+-
+-/etc/opt/microsoft/scx/pf_file.sh;                                      intermediate/${{BUILD_CONFIGURATION}}/pf_file.sh;                 444; root; sys
+-/etc/opt/microsoft/scx/conf/scxconfig.conf;                             installer/conf/scxconfig.conf;                                    644; root; ${{ROOT_GROUP_NAME}}; conffile
+-/etc/opt/microsoft/scx/conf/scxlog.conf;                                installer/conf/scxlog.conf;                                       644; root; ${{ROOT_GROUP_NAME}}; conffile
+-/etc/opt/microsoft/scx/conf/scxrunas.conf;                              installer/conf/scxrunas.conf;                                     644; root; ${{ROOT_GROUP_NAME}}; conffile
+-/etc/opt/microsoft/scx/conf/installinfo.txt;                            installer/conf/installinfo.txt;                                   644; root; ${{ROOT_GROUP_NAME}}; conffile
+-
+-/etc/opt/omi/conf/omiregister/root-scx/SCXProvider-root.reg;            installer/conf/omi/SCXProvider-root.reg;                          755; root; ${{ROOT_GROUP_NAME}} 
+-/etc/opt/omi/conf/omiregister/root-scx/SCXProvider-req.reg;             installer/conf/omi/SCXProvider-req.reg;                           755; root; ${{ROOT_GROUP_NAME}} 
++/var/vcap/packages/scx/opt/bin/setup.sh;                                        intermediate/${{BUILD_CONFIGURATION}}/scx_setup.sh;               644; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/opt/bin/uninstall;                                       installer/conf/uninstall;                                         755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/opt/bin/tools/setup.sh;                                  intermediate/${{BUILD_CONFIGURATION}}/scx_setup_tools.sh;         644; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/opt/bin/tools/scxadmin;                                  intermediate/${{BUILD_CONFIGURATION}}/scxadmin.sh;                755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/opt/bin/tools/scxsslconfig;                              intermediate/${{BUILD_CONFIGURATION}}/scxsslconfig.sh;            755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/opt/bin/tools/.scxsslconfig;                             intermediate/${{BUILD_CONFIGURATION}}${{ULINUX_POSTFIX}}/scxsslconfig;  755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/opt/bin/tools/.scxadmin;                                 intermediate/${{BUILD_CONFIGURATION}}/scxadmin;                         755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/opt/bin/omi_preexec;                                     intermediate/${{BUILD_CONFIGURATION}}/omi_preexec;                      755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/opt/bin/scxlogfilereader;                                intermediate/${{BUILD_CONFIGURATION}}/scxlogfilereader;                 755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/opt/lib/libSCXCoreProviderModule.${{SHLIB_EXT}};         intermediate/${{BUILD_CONFIGURATION}}/libSCXCoreProviderModule.${{SHLIB_EXT}}; 755; root; ${{ROOT_GROUP_NAME}}
++
++/var/vcap/packages/scx/etc/pf_file.sh;                                      intermediate/${{BUILD_CONFIGURATION}}/pf_file.sh;                 444; root; sys
++/var/vcap/packages/scx/etc/conf/scxconfig.conf;                             installer/conf/scxconfig.conf;                                    644; root; ${{ROOT_GROUP_NAME}}; conffile
++/var/vcap/packages/scx/etc/conf/scxlog.conf;                                installer/conf/scxlog.conf;                                       644; root; ${{ROOT_GROUP_NAME}}; conffile
++/var/vcap/packages/scx/etc/conf/scxrunas.conf;                              installer/conf/scxrunas.conf;                                     644; root; ${{ROOT_GROUP_NAME}}; conffile
++/var/vcap/packages/scx/etc/conf/installinfo.txt;                            installer/conf/installinfo.txt;                                   644; root; ${{ROOT_GROUP_NAME}}; conffile
++
++/var/vcap/packages/omi/etc/conf/omiregister/root-scx/SCXProvider-root.reg;            installer/conf/omi/SCXProvider-root.reg;                          755; root; ${{ROOT_GROUP_NAME}} 
++/var/vcap/packages/omi/etc/conf/omiregister/root-scx/SCXProvider-req.reg;             installer/conf/omi/SCXProvider-req.reg;                           755; root; ${{ROOT_GROUP_NAME}} 
+ 
+ %Links
+-/opt/omi/lib/libSCXCoreProviderModule.${{SHLIB_EXT}}; /opt/microsoft/scx/lib/libSCXCoreProviderModule.${{SHLIB_EXT}}; 644; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/lib/libSCXCoreProviderModule.${{SHLIB_EXT}}; /var/vcap/packages/scx/opt/lib/libSCXCoreProviderModule.${{SHLIB_EXT}}; 644; root; ${{ROOT_GROUP_NAME}}
+ %% Create a link to make scxadmin easier to run ...
+ %%
+-%% On Solaris 5.10 and later, we deal with the /usr/sbin/scxadmin link via postinstall;
++%% On Solaris 5.10 and later, we deal with the /var/vcap/packages/scx/sbin/scxadmin link via postinstall;
+ %% This is to allow zones to work properly for sparse root zones
+ #if PF != SunOS
+-/usr/sbin/scxadmin;                                                     ../../opt/microsoft/scx/bin/tools/scxadmin;                       755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/sbin/scxadmin;                                                     ../../var/vcap/packages/scx/opt/bin/tools/scxadmin;                       755; root; ${{ROOT_GROUP_NAME}}
+ #elseif PFMINOR <= 9
+-/usr/sbin/scxadmin;                                                     ../../opt/microsoft/scx/bin/tools/scxadmin;                       755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/sbin/scxadmin;                                                     ../../var/vcap/packages/scx/opt/bin/tools/scxadmin;                       755; root; ${{ROOT_GROUP_NAME}}
+ #endif
+ 
+ %Directories
+-/usr;                                                   755; root; ${{ROOT_GROUP_NAME}}; sysdir
+-/usr/sbin;                                              755; root; ${{ROOT_GROUP_NAME}}; sysdir
+-/opt;                                                   755; root; ${{ROOT_GROUP_NAME}}; sysdir
+-/etc;                                                   755; root; ${{ROOT_GROUP_NAME}}; sysdir
+-/etc/opt;                                               755; root; ${{ROOT_GROUP_NAME}}; sysdir
+-/var;                                                   755; root; ${{ROOT_GROUP_NAME}}; sysdir
+-/var/opt;                                               755; root; ${{ROOT_GROUP_NAME}}; sysdir
+-/opt/microsoft;                                         755; root; ${{ROOT_GROUP_NAME}}; sysdir
+-/opt/microsoft/scx;                                     755; root; ${{ROOT_GROUP_NAME}}
+-
+-/opt/microsoft/scx/bin;                                 755; root; ${{ROOT_GROUP_NAME}}
+-/opt/microsoft/scx/bin/tools;                           755; root; ${{ROOT_GROUP_NAME}}
+-/opt/microsoft/scx/lib;                                 755; root; ${{ROOT_GROUP_NAME}}
+-
+-/opt/omi;                                               755; root; ${{ROOT_GROUP_NAME}}; sysdir
+-/opt/omi/lib;                                           755; root; ${{ROOT_GROUP_NAME}}; sysdir
+-
+-/etc/opt/microsoft;                                     755; root; ${{ROOT_GROUP_NAME}}; sysdir
+-/etc/opt/microsoft/scx;                                 755; root; ${{ROOT_GROUP_NAME}}
+-/etc/opt/microsoft/scx/conf;                            755; root; ${{ROOT_GROUP_NAME}}
+-/etc/opt/microsoft/scx/ssl;                             755; root; ${{ROOT_GROUP_NAME}}
+-/etc/opt/microsoft/scx/conf/.baseconf;                  755; root; ${{ROOT_GROUP_NAME}}
+-
+-/etc/opt/omi;                                           755; root; ${{ROOT_GROUP_NAME}}; sysdir
+-/etc/opt/omi/conf;                                      755; root; ${{ROOT_GROUP_NAME}}; sysdir
+-/etc/opt/omi/conf/omiregister;                          755; root; ${{ROOT_GROUP_NAME}}; sysdir
+-/etc/opt/omi/conf/omiregister/root-omi;                 755; root; ${{ROOT_GROUP_NAME}}; sysdir
+-/etc/opt/omi/conf/omiregister/root-scx;                 755; root; ${{ROOT_GROUP_NAME}}
+-
+-/var/opt/microsoft;                                     755; root; ${{ROOT_GROUP_NAME}}; sysdir
+-/var/opt/microsoft/scx;                                 755; root; ${{ROOT_GROUP_NAME}}
+-/var/opt/microsoft/scx/tmp;                             755; root; ${{ROOT_GROUP_NAME}}
+-/var/opt/microsoft/scx/lib;                             755; root; ${{ROOT_GROUP_NAME}}
+-/var/opt/microsoft/scx/lib/state;                       755; root; ${{ROOT_GROUP_NAME}}
+-/var/opt/microsoft/scx/log;                             755; root; ${{ROOT_GROUP_NAME}}
++%% /usr;                                                   755; root; ${{ROOT_GROUP_NAME}}; sysdir
++%% /usr/sbin;                                              755; root; ${{ROOT_GROUP_NAME}}; sysdir
++%% /opt;                                                   755; root; ${{ROOT_GROUP_NAME}}; sysdir
++%% /etc;                                                   755; root; ${{ROOT_GROUP_NAME}}; sysdir
++%% /etc/opt;                                               755; root; ${{ROOT_GROUP_NAME}}; sysdir
++%% /var;                                                   755; root; ${{ROOT_GROUP_NAME}}; sysdir
++%% /var/opt;                                               755; root; ${{ROOT_GROUP_NAME}}; sysdir
++%% /opt/microsoft;                                         755; root; ${{ROOT_GROUP_NAME}}; sysdir
++/var/vcap/packages/scx;                                755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/opt;                                     755; root; ${{ROOT_GROUP_NAME}}
++
++/var/vcap/packages/scx/opt/bin;                                 755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/opt/bin/tools;                           755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/opt/lib;                                 755; root; ${{ROOT_GROUP_NAME}}
++
++/var/vcap/packages/omi/opt;                                               755; root; ${{ROOT_GROUP_NAME}}; sysdir
++/var/vcap/packages/omi/opt/lib;                                           755; root; ${{ROOT_GROUP_NAME}}; sysdir
++
++%% /etc/opt/microsoft;                                     755; root; ${{ROOT_GROUP_NAME}}; sysdir
++/var/vcap/packages/scx/etc;                                 755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/etc/conf;                            755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/etc/ssl;                             755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/etc/conf/.baseconf;                  755; root; ${{ROOT_GROUP_NAME}}
++
++/var/vcap/packages/omi/etc;                                           755; root; ${{ROOT_GROUP_NAME}}; sysdir
++/var/vcap/packages/omi/etc/conf;                                      755; root; ${{ROOT_GROUP_NAME}}; sysdir
++/var/vcap/packages/omi/etc/conf/omiregister;                          755; root; ${{ROOT_GROUP_NAME}}; sysdir
++/var/vcap/packages/omi/etc/conf/omiregister/root-omi;                 755; root; ${{ROOT_GROUP_NAME}}; sysdir
++/var/vcap/packages/omi/etc/conf/omiregister/root-scx;                 755; root; ${{ROOT_GROUP_NAME}}
++
++%% /var/opt/microsoft;                                     755; root; ${{ROOT_GROUP_NAME}}; sysdir
++/var/vcap/packages/scx/var;                                 755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/var/tmp;                             755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/var/lib;                             755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/var/lib/state;                       755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/sys/log/scx;                             755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/scx/sbin;                                755; root; ${{ROOT_GROUP_NAME}}
+ 
+ %Dependencies
+ 
+ %CheckIfOmiIsRunning
+ OMI_IS_RUNNING=1
+-if [ -f /var/opt/omi/run/omiserver.pid ]; then
++if [ -f /var/vcap/sys/run/omi/omiserver.pid ]; then
+     #  Check if omiserver is running with this pid.
+-    omi_pid=`cat /var/opt/omi/run/omiserver.pid`
++    omi_pid=`cat /var/vcap/sys/run/omi/omiserver.pid`
+     ps -aef | grep $omi_pid | grep omiserver 1> /dev/null 2> /dev/null
+     if [ $? -ne 0 ]; then
+ 	OMI_IS_RUNNING=0
+@@ -184,16 +186,16 @@ UnconfigureScxPAM_dir() {
+ %Postinstall_10
+ #include UnconfigureScxPAM
+ CreateSoftLinkToSudo() {
+-    [ ! -L /etc/opt/microsoft/scx/conf/sudodir ] && ln -s ${{SUDO_DIR}} /etc/opt/microsoft/scx/conf/sudodir || true
++    [ ! -L /var/vcap/packages/scx/etc/conf/sudodir ] && ln -s ${{SUDO_DIR}} /var/vcap/packages/scx/etc/conf/sudodir || true
+ }
+ 
+ CreateSoftLinkToTmpDir() {
+-    [ ! -L /etc/opt/microsoft/scx/conf/tmpdir ] && ln -s ${{TMP_DIR}} /etc/opt/microsoft/scx/conf/tmpdir || true
++    [ ! -L /var/vcap/packages/scx/etc/conf/tmpdir ] && ln -s ${{TMP_DIR}} /var/vcap/packages/scx/etc/conf/tmpdir || true
+ }
+ 
+ WriteInstallInfo() {
+-    date +%Y-%m-%dT%T.0Z > /etc/opt/microsoft/scx/conf/installinfo.txt
+-    echo ${{VERSION}}-${{RELEASE}} >> /etc/opt/microsoft/scx/conf/installinfo.txt
++    date +%Y-%m-%dT%T.0Z > /var/vcap/packages/scx/etc/conf/installinfo.txt
++    echo ${{VERSION}}-${{RELEASE}} >> /var/vcap/packages/scx/etc/conf/installinfo.txt
+ }
+ 
+ ConfigureRunAs() {
+@@ -201,25 +203,25 @@ ConfigureRunAs() {
+         # File is not zero size
+         return 0
+     fi
+-    /opt/microsoft/scx/bin/tools/scxadmin -config-reset RunAs AllowRoot > /dev/null 2>&1
++    /var/vcap/packages/scx/opt/bin/tools/scxadmin -config-reset RunAs AllowRoot > /dev/null 2>&1
+ }
+ 
+ HandleConfigFiles() {
+-    rm -f /etc/opt/microsoft/scx/conf/cimserver_current.conf* /etc/opt/microsoft/scx/conf/cimserver_planned.conf* /etc/opt/microsoft/scx/conf/omiserver.conf*
++    rm -f /var/vcap/packages/scx/etc/conf/cimserver_current.conf* /var/vcap/packages/scx/etc/conf/cimserver_planned.conf* /var/vcap/packages/scx/etc/conf/omiserver.conf*
+ 
+ #if DISABLE_PORT != true
+     # File /etc/scxagent-disable-port forces port 1270 to not be listened for
+     if [ ! -f /etc/scxagent-disable-port ]; then
+         # Add port 1270 to the list of ports that OMI will listen on
+-        /opt/omi/bin/omiconfigeditor httpsport -a 1270 < /etc/opt/omi/conf/omiserver.conf > /etc/opt/omi/conf/omiserver.conf_temp
+-        mv /etc/opt/omi/conf/omiserver.conf_temp /etc/opt/omi/conf/omiserver.conf
++        /var/vcap/packages/omi/opt/bin/omiconfigeditor httpsport -a 1270 < /var/vcap/packages/omi/etc/conf/omiserver.conf > /var/vcap/packages/omi/etc/conf/omiserver.conf_temp
++        mv /var/vcap/packages/omi/etc/conf/omiserver.conf_temp /var/vcap/packages/omi/etc/conf/omiserver.conf
+     fi
+ #endif
+     rm -f /etc/scxagent-disable-port
+ }
+ 
+ GenerateCertificate() {
+-    if [ ! -f /etc/opt/omi/ssl/.omi_cert_marker ]; then
++    if [ ! -f /var/vcap/packages/omi/etc/ssl/.omi_cert_marker ]; then
+ 	# No OMI cert marker.  This means that OM has installed certificates to this folder, or there's data corruption.
+ 	return 0
+     fi
+@@ -258,8 +260,8 @@ GenerateCertificate() {
+ 	    fi
+             exit 1
+ 	else
+-	    # Certificate generated successfully.  Remove /etc/opt/omi/ssl/.omi_cert_marker to signify that we have overwritten omi's cert
+-	    rm -f /etc/opt/omi/ssl/.omi_cert_marker
++	    # Certificate generated successfully.  Remove /var/vcap/packages/omi/etc/ssl/.omi_cert_marker to signify that we have overwritten omi's cert
++	    rm -f /var/vcap/packages/omi/etc/ssl/.omi_cert_marker
+ 	    rm -f ${{OMI_SSL_DIR}}/omikey.pem_temp ${{OMI_SSL_DIR}}/omi.pem_temp
+         fi
+     else
+@@ -305,15 +307,15 @@ ln -s ${{OMI_SSL_DIR}}/omi.pem ${{SSL_DIR}}/scx.pem
+ %Preuninstall_10
+ #include UnconfigureScxPAM
+ RemoveConfigFiles() {
+-    if [ -f /etc/opt/microsoft/scx/conf/omiserver.conf -a -f /etc/opt/microsoft/scx/conf/.baseconf/omiserver.backup ]; then
+-        diff /etc/opt/microsoft/scx/conf/omiserver.conf /etc/opt/microsoft/scx/conf/.baseconf/omiserver.backup
++    if [ -f /var/vcap/packages/scx/etc/conf/omiserver.conf -a -f /var/vcap/packages/scx/etc/conf/.baseconf/omiserver.backup ]; then
++        diff /var/vcap/packages/scx/etc/conf/omiserver.conf /var/vcap/packages/scx/etc/conf/.baseconf/omiserver.backup
+         if [ $? -eq 1 ]; then
+-            mv /etc/opt/microsoft/scx/conf/omiserver.conf /etc/opt/microsoft/scx/conf/omiserver.conf.pkgsave 2> /dev/null
++            mv /var/vcap/packages/scx/etc/conf/omiserver.conf /var/vcap/packages/scx/etc/conf/omiserver.conf.pkgsave 2> /dev/null
+         else
+-            rm /etc/opt/microsoft/scx/conf/omiserver.conf 2> /dev/null
++            rm /var/vcap/packages/scx/etc/conf/omiserver.conf 2> /dev/null
+         fi
+     else
+-        rm /etc/opt/microsoft/scx/conf/omiserver.conf 2> /dev/null || true
++        rm /var/vcap/packages/scx/etc/conf/omiserver.conf 2> /dev/null || true
+     fi
+ }
+ 
+diff --git a/installer/datafiles/HPUX.data b/installer/datafiles/HPUX.data
+index d20b5a2..f61138a 100644
+--- a/installer/datafiles/HPUX.data
++++ b/installer/datafiles/HPUX.data
+@@ -1,7 +1,7 @@
+ %Variables
+ PF:             'HPUX'
+ HPUX_COPYRIGHT: 'Copyright (c) Microsoft Corporation.  All rights reserved.'
+-SERVICE_SCRIPT: '/opt/omi/bin/service_control'
++SERVICE_SCRIPT: '/var/vcap/packages/omi/opt/bin/service_control'
+ 
+ %Dependencies
+ omi,r>=1.0.8-6
+@@ -27,7 +27,7 @@ fi
+ # RemoveDeletedFiles
+ rm -f ${{SCXHOME}}/lib/libpegCLIClientLib.*
+ rm -f ${{SCXHOME}}/lib/libpegcql.*
+-rm -Rf /var/opt/microsoft/scx/lib/repository/root#scx/classes
++rm -Rf /var/vcap/packages/scx/var/lib/repository/root#scx/classes
+ 
+ %Postinstall_950
+ set -e
+@@ -52,8 +52,8 @@ DeleteSoftLinkToTmpDir
+ %Postuninstall_50
+ #if DISABLE_PORT != true
+     # Remove port 1270 from the list of ports that OMI will listen on
+-    /opt/omi/bin/omiconfigeditor httpsport -r 1270 < /etc/opt/omi/conf/omiserver.conf > /etc/opt/omi/conf/omiserver.conf_temp
+-    mv /etc/opt/omi/conf/omiserver.conf_temp /etc/opt/omi/conf/omiserver.conf
++    /var/vcap/packages/omi/opt/bin/omiconfigeditor httpsport -r 1270 < /var/vcap/packages/omi/etc/conf/omiserver.conf > /var/vcap/packages/omi/etc/conf/omiserver.conf_temp
++    mv /var/vcap/packages/omi/etc/conf/omiserver.conf_temp /var/vcap/packages/omi/etc/conf/omiserver.conf
+ #endif
+ 
+ %Postuninstall_200
+@@ -65,9 +65,9 @@ RemoveEmptyDirectoryRecursive() {
+     done
+ }
+ 
+-RemoveEmptyDirectoryRecursive /opt/microsoft/scx
+-RemoveEmptyDirectoryRecursive /etc/opt/microsoft/scx
+-RemoveEmptyDirectoryRecursive /var/opt/microsoft/scx
++RemoveEmptyDirectoryRecursive /var/vcap/packages/scx/opt
++RemoveEmptyDirectoryRecursive /var/vcap/packages/scx/etc
++RemoveEmptyDirectoryRecursive /var/vcap/packages/scx/var
+ rmdir /opt/microsoft 2>&1 > /dev/null
+ 
+ %Postuninstall_1100
+diff --git a/installer/datafiles/HPUX_pa-risc.data b/installer/datafiles/HPUX_pa-risc.data
+index 4bdafaf..1c134fb 100644
+--- a/installer/datafiles/HPUX_pa-risc.data
++++ b/installer/datafiles/HPUX_pa-risc.data
+@@ -3,4 +3,4 @@ PFARCH: 'pa-risc'
+ SHLIB_EXT: 'sl'
+ 
+ %Files
+-/opt/microsoft/scx/lib/libbase.${{SHLIB_EXT}}; ${{OMI_DIR}}/output/lib/libbase.${{SHLIB_EXT}}; 755; root; ${{ROOT_GROUP_NAME}}
+\ No newline at end of file
++/var/vcap/packages/scx/opt/lib/libbase.${{SHLIB_EXT}}; ${{OMI_DIR}}/output/lib/libbase.${{SHLIB_EXT}}; 755; root; ${{ROOT_GROUP_NAME}}
+\ No newline at end of file
+diff --git a/installer/datafiles/Linux.data b/installer/datafiles/Linux.data
+index 0a037b3..52f26f3 100644
+--- a/installer/datafiles/Linux.data
++++ b/installer/datafiles/Linux.data
+@@ -1,6 +1,6 @@
+ %Variables
+ PF:	      'Linux'
+-OMI_SERVICE:  '/opt/omi/bin/service_control'
++OMI_SERVICE:  '/var/vcap/packages/omi/opt/bin/service_control'
+ 
+ PFDISTRO: 'ULINUX'
+ PFMAJOR: '1'
+@@ -10,8 +10,8 @@ PFMINOR: '0'
+ ULINUX
+ 
+ %Files
+-/opt/microsoft/scx/bin/tools/GetLinuxOS.sh;                             intermediate/${{BUILD_CONFIGURATION}}/GetLinuxOS.sh;                    755; root; root
+-/etc/opt/microsoft/scx/conf/scx-release;                                installer/conf/scx-release;                                       644; root; ${{ROOT_GROUP_NAME}}; conffile
++/var/vcap/packages/scx/opt/bin/tools/GetLinuxOS.sh;                             intermediate/${{BUILD_CONFIGURATION}}/GetLinuxOS.sh;                    755; root; root
++/var/vcap/packages/scx/etc/conf/scx-release;                                installer/conf/scx-release;                                       644; root; ${{ROOT_GROUP_NAME}}; conffile
+ 
+ 
+ %Preinstall_50
+@@ -32,24 +32,24 @@ ${{OMI_SERVICE}} reload
+ %Postinstall_1200
+ # Have we previously installed a Universal Kit before? Keep track of that!
+ # This is used by the OS provider to mimic non-universal kit installations ...
+-if ! egrep -q '^ORIGINAL_KIT_TYPE=' /etc/opt/microsoft/scx/conf/scxconfig.conf; then
+-    if [ -s /etc/opt/microsoft/scx/conf/scx-release ]; then
+-        echo 'ORIGINAL_KIT_TYPE=Universal' >> /etc/opt/microsoft/scx/conf/scxconfig.conf
++if ! egrep -q '^ORIGINAL_KIT_TYPE=' /var/vcap/packages/scx/etc/conf/scxconfig.conf; then
++    if [ -s /var/vcap/packages/scx/etc/conf/scx-release ]; then
++        echo 'ORIGINAL_KIT_TYPE=Universal' >> /var/vcap/packages/scx/etc/conf/scxconfig.conf
+     else
+-        echo 'ORIGINAL_KIT_TYPE=!Universal' >> /etc/opt/microsoft/scx/conf/scxconfig.conf
++        echo 'ORIGINAL_KIT_TYPE=!Universal' >> /var/vcap/packages/scx/etc/conf/scxconfig.conf
+     fi
+ fi
+ 
+ # Generate the conf/scx-release file
+-/opt/microsoft/scx/bin/tools/GetLinuxOS.sh
++/var/vcap/packages/scx/opt/bin/tools/GetLinuxOS.sh
+ 
+ %Postuninstall_50
+ #if DISABLE_PORT != true
+     # If we're called for upgrade, don't do anything
+     if ${{PERFORMING_UPGRADE_NOT}}; then
+         # Remove port 1270 from the list of ports that OMI will listen on
+-        /opt/omi/bin/omiconfigeditor httpsport -r 1270 < /etc/opt/omi/conf/omiserver.conf > /etc/opt/omi/conf/omiserver.conf_temp
+-        mv /etc/opt/omi/conf/omiserver.conf_temp /etc/opt/omi/conf/omiserver.conf
++        /var/vcap/packages/omi/opt/bin/omiconfigeditor httpsport -r 1270 < /var/vcap/packages/omi/etc/conf/omiserver.conf > /var/vcap/packages/omi/etc/conf/omiserver.conf_temp
++        mv /var/vcap/packages/omi/etc/conf/omiserver.conf_temp /var/vcap/packages/omi/etc/conf/omiserver.conf
+     fi
+ #endif
+ 
+diff --git a/installer/datafiles/Linux_DPKG.data b/installer/datafiles/Linux_DPKG.data
+index db843c4..953d618 100644
+--- a/installer/datafiles/Linux_DPKG.data
++++ b/installer/datafiles/Linux_DPKG.data
+@@ -3,4 +3,4 @@ PERFORMING_UPGRADE_NOT: '[ "$1" != "upgrade" -a "$1" != "purge" ]'
+ PACKAGE_TYPE: 'DPKG'
+ 
+ %Dependencies
+-omi (>= 1.0.8.6)
++omi-bosh (>= 1.0.8.6)
+diff --git a/installer/datafiles/Linux_RPM.data b/installer/datafiles/Linux_RPM.data
+index fcfbdca..bb77ae7 100644
+--- a/installer/datafiles/Linux_RPM.data
++++ b/installer/datafiles/Linux_RPM.data
+@@ -3,7 +3,7 @@ PERFORMING_UPGRADE_NOT: '[ "$1" -ne 1 ]'
+ PACKAGE_TYPE: 'RPM'
+ 
+ %Dependencies
+-omi >= 1.0.8-6
++omi-bosh >= 1.0.8-6
+ 
+ %Postinstall_650
+ # If this is a fresh install and not an upgrade
+@@ -16,4 +16,4 @@ fi  ## if [ $1 -eq 1 ]
+ if [ $1 -eq 0 ]; then
+ 
+ %Preuninstall_5000
+-fi  ## if [ $1 -eq 0 ]
+\ No newline at end of file
++fi  ## if [ $1 -eq 0 ]
+diff --git a/installer/datafiles/SunOS.data b/installer/datafiles/SunOS.data
+index e29e16d..0a9a9be 100644
+--- a/installer/datafiles/SunOS.data
++++ b/installer/datafiles/SunOS.data
+@@ -25,7 +25,7 @@ VerifyPatchInstalled() {
+ %Postinstall_350
+ #if PFMINOR >= 10
+ set +e
+-ln -s /opt/microsoft/scx/bin/tools/scxadmin /usr/sbin/scxadmin > /dev/null 2>&1
++ln -s /var/vcap/packages/scx/opt/bin/tools/scxadmin /var/vcap/packages/scx/sbin/scxadmin > /dev/null 2>&1
+ set -e
+ #endif
+ 
+@@ -44,13 +44,13 @@ DeleteSoftLinkToTmpDir
+ %Postuninstall_50
+ #if DISABLE_PORT != true
+     # Remove port 1270 from the list of ports that OMI will listen on
+-    /opt/omi/bin/omiconfigeditor httpsport -r 1270 < /etc/opt/omi/conf/omiserver.conf > /etc/opt/omi/conf/omiserver.conf_temp
+-    mv /etc/opt/omi/conf/omiserver.conf_temp /etc/opt/omi/conf/omiserver.conf
++    /var/vcap/packages/omi/opt/bin/omiconfigeditor httpsport -r 1270 < /var/vcap/packages/omi/etc/conf/omiserver.conf > /var/vcap/packages/omi/etc/conf/omiserver.conf_temp
++    mv /var/vcap/packages/omi/etc/conf/omiserver.conf_temp /var/vcap/packages/omi/etc/conf/omiserver.conf
+ #endif
+ 
+ %Postuninstall_100
+ #if PFMINOR >= 10
+-rm /usr/sbin/scxadmin > /dev/null 2>&1
++rm /var/vcap/packages/scx/sbin/scxadmin > /dev/null 2>&1
+ #endif
+ 
+ %iConfig100
+diff --git a/installer/datafiles/SunOS_5.10.data b/installer/datafiles/SunOS_5.10.data
+index 8c9b519..763cabd 100644
+--- a/installer/datafiles/SunOS_5.10.data
++++ b/installer/datafiles/SunOS_5.10.data
+@@ -2,7 +2,7 @@
+ SUDO_DIR:       '/opt/sfw/bin'
+ PFMINOR:        '10'
+ PFMAJOR:        '5'
+-SERVICE_SCRIPT: '/opt/omi/bin/service_control'
++SERVICE_SCRIPT: '/var/vcap/packages/omi/opt/bin/service_control'
+ 
+ %OmiService_funcs
+ StopOmiServer() {
+diff --git a/installer/datafiles/SunOS_5.11.data b/installer/datafiles/SunOS_5.11.data
+index 9487c62..d54896c 100644
+--- a/installer/datafiles/SunOS_5.11.data
++++ b/installer/datafiles/SunOS_5.11.data
+@@ -1,7 +1,7 @@
+ %Variables
+ PFMAJOR:        '5'
+ PFMINOR:        '11'
+-SERVICE_SCRIPT: '/opt/omi/bin/service_control'
++SERVICE_SCRIPT: '/var/vcap/packages/omi/opt/bin/service_control'
+ 
+ %OmiService_funcs
+ StopOmiServer() {
+diff --git a/installer/generate_scxcore_scripts.py b/installer/generate_scxcore_scripts.py
+index 2f180e0..c07f6f9 100644
+--- a/installer/generate_scxcore_scripts.py
++++ b/installer/generate_scxcore_scripts.py
+@@ -15,29 +15,29 @@ def GenerateSetupScriptFile():
+     if Variables["PF"] == 'MacOS':
+         shfile.write('PATH=/usr/libexec/omi/bin:$PATH' + '\n')
+     else:
+-        shfile.write('PATH=/opt/omi/bin:$PATH' + '\n')
++        shfile.write('PATH=/var/vcap/packages/omi/opt/bin:$PATH' + '\n')
+     shfile.write('export PATH' + '\n')
+     if Variables["PF"] == 'MacOS':
+         shfile.write('DYLD_LIBRARY_PATH=/usr/libexec/microsoft/scx/lib:$DYLD_LIBRARY_PATH' + '\n')
+         shfile.write('export DYLD_LIBRARY_PATH' + '\n')
+     elif Variables["PF"] == 'HPUX' and Variables["PFARCH"] == "pa-risc":
+-        shfile.write('SHLIB_PATH=/opt/omi/lib:$SHLIB_PATH' + '\n')
++        shfile.write('SHLIB_PATH=/var/vcap/packages/omi/opt/lib:$SHLIB_PATH' + '\n')
+         shfile.write('export SHLIB_PATH' + '\n')
+     elif Variables["PF"] == "SunOS" and int(Variables["PFMAJOR"]) == 5 and int(Variables["PFMINOR"]) <= 9:
+-        shfile.write('LD_LIBRARY_PATH=/opt/omi/lib:/usr/local/ssl/lib:/usr/local/lib:$LD_LIBRARY_PATH' + '\n')
++        shfile.write('LD_LIBRARY_PATH=/var/vcap/packages/omi/opt/lib:/usr/local/ssl/lib:/usr/local/lib:$LD_LIBRARY_PATH' + '\n')
+         shfile.write('export LD_LIBRARY_PATH' + '\n')
+     elif Variables["PF"] == "AIX":
+-        shfile.write('LIBPATH=/opt/omi/lib:$LIBPATH\n')
++        shfile.write('LIBPATH=/var/vcap/packages/omi/opt/lib:$LIBPATH\n')
+         shfile.write('export LIBPATH\n')
+         # Since AIX searches LIBPATH first, it is questionable whether we need to define LD_LIBRARY_PATH also, but 
+         # in the interests of avoiding side effects of code that looks for it, we will set it here.
+-        shfile.write('LD_LIBRARY_PATH=/opt/omi/lib:$LD_LIBRARY_PATH\n')
++        shfile.write('LD_LIBRARY_PATH=/var/vcap/packages/omi/opt/lib:$LD_LIBRARY_PATH\n')
+         shfile.write('export LD_LIBRARY_PATH\n')
+     else:
+-        shfile.write('LD_LIBRARY_PATH=/opt/omi/lib:$LD_LIBRARY_PATH\n')
++        shfile.write('LD_LIBRARY_PATH=/var/vcap/packages/omi/opt/lib:$LD_LIBRARY_PATH\n')
+         shfile.write('export LD_LIBRARY_PATH' + '\n')
+     if Variables["BT"] == 'Bullseye':
+-        shfile.write('COVFILE=/var/opt/microsoft/scx/log/OpsMgr.cov' + '\n')
++        shfile.write('COVFILE=/var/vcap/sys/log/scx/OpsMgr.cov' + '\n')
+         shfile.write('export COVFILE' + '\n')
+     shfile.close()
+ 
+@@ -49,29 +49,29 @@ def GenerateToolsSetupScriptFile():
+     if Variables["PF"] == 'MacOS':
+         shfile.write('PATH=/usr/libexec/omi/bin/tools:$PATH' + '\n')
+     else:
+-        shfile.write('PATH=/opt/omi/bin:/opt/microsoft/scx/bin/tools:$PATH' + '\n')
++        shfile.write('PATH=/var/vcap/packages/omi/opt/bin:/var/vcap/packages/scx/opt/bin/tools:$PATH' + '\n')
+     shfile.write('export PATH' + '\n')
+     if Variables["PF"] == 'MacOS':
+         shfile.write('DYLD_LIBRARY_PATH=/usr/libexec/microsoft/scx/lib:$DYLD_LIBRARY_PATH' + '\n')
+         shfile.write('export DYLD_LIBRARY_PATH' + '\n')
+     elif Variables["PF"] == 'HPUX' and Variables["PFARCH"] == "pa-risc":
+-        shfile.write('SHLIB_PATH=/opt/omi/lib:$SHLIB_PATH' + '\n')
++        shfile.write('SHLIB_PATH=/var/vcap/packages/omi/opt/lib:$SHLIB_PATH' + '\n')
+         shfile.write('export SHLIB_PATH' + '\n')
+     elif Variables["PF"] == "SunOS" and int(Variables["PFMAJOR"]) == 5 and int(Variables["PFMINOR"]) <= 9:
+-        shfile.write('LD_LIBRARY_PATH=/opt/omi/lib:/usr/local/ssl/lib:/usr/local/lib:$LD_LIBRARY_PATH' + '\n')
++        shfile.write('LD_LIBRARY_PATH=/var/vcap/packages/omi/opt/lib:/usr/local/ssl/lib:/usr/local/lib:$LD_LIBRARY_PATH' + '\n')
+         shfile.write('export LD_LIBRARY_PATH' + '\n')
+     elif Variables["PF"] == 'AIX':
+-        shfile.write('LIBPATH=/opt/omi/lib:$LIBPATH\n')
++        shfile.write('LIBPATH=/var/vcap/packages/omi/opt/lib:$LIBPATH\n')
+         shfile.write('export LIBPATH' + '\n')
+         # Since AIX searches LIBPATH first, it is questionable whether we need to define LD_LIBRARY_PATH also, but 
+         # in the interests of avoiding side effects of code that looks for it, we will set it here.
+-        shfile.write('LD_LIBRARY_PATH=/opt/omi/lib:$LD_LIBRARY_PATH\n')
++        shfile.write('LD_LIBRARY_PATH=/var/vcap/packages/omi/opt/lib:$LD_LIBRARY_PATH\n')
+         shfile.write('export LD_LIBRARY_PATH\n')
+     else:
+-        shfile.write('LD_LIBRARY_PATH=/opt/omi/lib:$LD_LIBRARY_PATH' + '\n')
++        shfile.write('LD_LIBRARY_PATH=/var/vcap/packages/omi/opt/lib:$LD_LIBRARY_PATH' + '\n')
+         shfile.write('export LD_LIBRARY_PATH' + '\n')
+     if Variables["BT"] == 'Bullseye':
+-        shfile.write('COVFILE=/var/opt/microsoft/scx/log/OpsMgr.cov' + '\n')
++        shfile.write('COVFILE=/var/vcap/sys/log/scx/OpsMgr.cov' + '\n')
+         shfile.write('export COVFILE' + '\n')
+     shfile.close()
+ 
+@@ -82,11 +82,11 @@ def GenerateAdminToolScriptFile():
+     shfile.write('# Copyright (c) Microsoft Corporation.  All rights reserved.\n\n')
+ 
+     if Variables["PF"] == 'MacOS':
+-        scxpath = "/usr/libexec"
++        scxpath = "/usr/libexec/microsoft/scx"
+     else:
+-        scxpath = "/opt"
++        scxpath = "/var/vcap/packages/scx/opt"
+ 
+-    shfile.write('. ' + scxpath + '/microsoft/scx/bin/tools/setup.sh\n')
++    shfile.write('. ' + scxpath + '/bin/tools/setup.sh\n')
+ 
+     # On older (pre-systemd) systems, with non-latin locale set, scxadmin can get
+     # 'Exception: Multibyte string conversion failed' errors when trying to convert
+@@ -99,7 +99,7 @@ def GenerateAdminToolScriptFile():
+ 
+     shfile.write('LANG=C; export LANG\n')
+ 
+-    shfile.write('exec ' + scxpath + '/microsoft/scx/bin/tools/.scxadmin "$@"\n')
++    shfile.write('exec ' + scxpath + '/bin/tools/.scxadmin "$@"\n')
+     shfile.close()
+ 
+ def GenerateSSLToolScriptFile():
+@@ -109,12 +109,12 @@ def GenerateSSLToolScriptFile():
+     shfile.write('# Copyright (c) Microsoft Corporation.  All rights reserved.\n\n')
+ 
+     if Variables["PF"] == 'MacOS':
+-        scxpath = "/usr/libexec"
++        scxpath = "/usr/libexec/microsoft/scx"
+     else:
+-        scxpath = "/opt"
++        scxpath = "/var/vcap/packages/scx/opt"
+ 
+-    shfile.write('. ' + scxpath + '/microsoft/scx/bin/tools/setup.sh\n')
+-    shfile.write('exec ' + scxpath + '/microsoft/scx/bin/tools/.scxsslconfig "$@"\n')
++    shfile.write('. ' + scxpath + '/bin/tools/setup.sh\n')
++    shfile.write('exec ' + scxpath + '/bin/tools/.scxsslconfig "$@"\n')
+     shfile.close()
+ 
+ def GenerateScripts():
+diff --git a/source/code/providers/support/logfileprovider.cpp b/source/code/providers/support/logfileprovider.cpp
+index 880e612..c521ad9 100644
+--- a/source/code/providers/support/logfileprovider.cpp
++++ b/source/code/providers/support/logfileprovider.cpp
+@@ -155,7 +155,7 @@ namespace SCXCore {
+         }
+         else
+         {
+-            programName = L"/opt/microsoft/scx/bin/scxlogfilereader -p";
++            programName = L"/var/vcap/packages/scx/opt/bin/scxlogfilereader -p";
+         }
+ 
+         // Elevate the command if that's called for
+@@ -269,7 +269,7 @@ namespace SCXCore {
+         }
+         else
+         {
+-            programName = L"/opt/microsoft/scx/bin/scxlogfilereader -r";
++            programName = L"/var/vcap/packages/scx/opt/bin/scxlogfilereader -r";
+         }
+ 
+         // Elevate the command if that's called for
+diff --git a/source/code/providers/support/logfilereader.cpp b/source/code/providers/support/logfilereader.cpp
+index fcb3165..18657a1 100644
+--- a/source/code/providers/support/logfilereader.cpp
++++ b/source/code/providers/support/logfilereader.cpp
+@@ -613,7 +613,7 @@ int ResetAllLogFileStates(bool fResetOnRead)
+     }
+     else
+     {
+-        s_basePath = L"/var/opt/microsoft/scx/lib/state/";
++        s_basePath = L"/var/vcap/packages/scx/var/lib/state/";
+     }
+ 
+     return logFileReader->ResetAllLogFileStates(s_basePath, fResetOnRead);
+diff --git a/source/code/providers/support/metaprovider.cpp b/source/code/providers/support/metaprovider.cpp
+index ff25a8f..2621329 100644
+--- a/source/code/providers/support/metaprovider.cpp
++++ b/source/code/providers/support/metaprovider.cpp
+@@ -37,9 +37,9 @@ namespace SCXCore
+ {
+     /** Installation information file name */
+ #if defined (macos)
+-    static const string installInfoFileName = "/private/etc/opt/microsoft/scx/conf/installinfo.txt";
++    static const string installInfoFileName = "/private/var/vcap/packages/scx/etc/conf/installinfo.txt";
+ #else
+-    static const string installInfoFileName = "/etc/opt/microsoft/scx/conf/installinfo.txt";
++    static const string installInfoFileName = "/var/vcap/packages/scx/etc/conf/installinfo.txt";
+ #endif
+ 
+     //
+diff --git a/source/code/providers/support/productdependencies.cpp b/source/code/providers/support/productdependencies.cpp
+index 4d0fe31..e21bda0 100644
+--- a/source/code/providers/support/productdependencies.cpp
++++ b/source/code/providers/support/productdependencies.cpp
+@@ -75,12 +75,12 @@ namespace SCXSystemLib
+     {
+         std::wstring GetLinuxOS_ScriptPath()
+         {
+-            return std::wstring(L"/opt/microsoft/scx/bin/tools/GetLinuxOS.sh");
++            return std::wstring(L"/var/vcap/packages/scx/opt/bin/tools/GetLinuxOS.sh");
+         }
+ 
+         std::wstring GetLinuxOS_ReleasePath()
+         {
+-            return std::wstring(L"/etc/opt/microsoft/scx/conf/scx-release");
++            return std::wstring(L"/var/vcap/packages/scx/etc/conf/scx-release");
+         }
+ 
+         void Disk_IgnoredFileSystems( std::set<std::wstring> &igfs )
+diff --git a/source/code/providers/support/runasprovider.cpp b/source/code/providers/support/runasprovider.cpp
+index e020337..758757c 100644
+--- a/source/code/providers/support/runasprovider.cpp
++++ b/source/code/providers/support/runasprovider.cpp
+@@ -19,7 +19,7 @@
+ #include "scxrunasconfigurator.h"
+ #include "runasprovider.h"
+ 
+-const std::wstring s_defaultTmpDir = L"/etc/opt/microsoft/scx/conf/tmpdir/";
++const std::wstring s_defaultTmpDir = L"/var/vcap/packages/scx/etc/conf/tmpdir/";
+ 
+ using namespace SCXSystemLib;
+ using namespace SCXCoreLib;
+diff --git a/source/code/providers/support/scxrunasconfigurator.cpp b/source/code/providers/support/scxrunasconfigurator.cpp
+index 7320626..d5f7f0f 100644
+--- a/source/code/providers/support/scxrunasconfigurator.cpp
++++ b/source/code/providers/support/scxrunasconfigurator.cpp
+@@ -146,15 +146,15 @@ namespace SCXCore
+     /** Default value for chrootpath. */
+     const SCXCoreLib::SCXFilePath RunAsConfigurator::s_ChRootPathDefault(L"");
+     /** Default value for CWD. */
+-    const SCXCoreLib::SCXFilePath RunAsConfigurator::s_CWDDefault(L"/var/opt/microsoft/scx/tmp/");
++    const SCXCoreLib::SCXFilePath RunAsConfigurator::s_CWDDefault(L"/var/vcap/packages/scx/var/tmp/");
+ 
+     /*----------------------------------------------------------------------------*/
+     /**
+        Constructor for the run as configurator.
+     */
+     RunAsConfigurator::RunAsConfigurator() :
+-        m_Parser(new ConfigurationFileParser(L"/etc/opt/microsoft/scx/conf/scxrunas.conf")),
+-        m_Writer(new ConfigurationFileWriter(L"/etc/opt/microsoft/scx/conf/scxrunas.conf")),
++        m_Parser(new ConfigurationFileParser(L"/var/vcap/packages/scx/etc/conf/scxrunas.conf")),
++        m_Writer(new ConfigurationFileWriter(L"/var/vcap/packages/scx/etc/conf/scxrunas.conf")),
+         m_AllowRoot(s_AllowRootDefault),
+         m_ChRootPath(s_ChRootPathDefault),
+         m_CWD(s_CWDDefault)
+diff --git a/source/code/providers/support/startuplog.h b/source/code/providers/support/startuplog.h
+index 4ef5b2e..36bfe22 100644
+--- a/source/code/providers/support/startuplog.h
++++ b/source/code/providers/support/startuplog.h
+@@ -16,7 +16,7 @@
+ #include <scxcorelib/scxfilepath.h>
+ 
+ namespace SCXCore {
+-    static const SCXCoreLib::SCXFilePath SCXConfFile(L"/etc/opt/microsoft/scx/conf/scxconfig.conf");
++    static const SCXCoreLib::SCXFilePath SCXConfFile(L"/var/vcap/packages/scx/etc/conf/scxconfig.conf");
+     void LogStartup(void);
+ }
+ 
+diff --git a/source/code/shared/tools/omi_preexec/omi_preexec.cpp b/source/code/shared/tools/omi_preexec/omi_preexec.cpp
+index 882da3b..a240eec 100644
+--- a/source/code/shared/tools/omi_preexec/omi_preexec.cpp
++++ b/source/code/shared/tools/omi_preexec/omi_preexec.cpp
+@@ -138,12 +138,12 @@ int main(int argc, char *argv[])
+     {
+         int rc;
+ 
+-        if (0 != (rc = _createDir("/var/opt/microsoft/scx/lib/state/", uid, gid)))
++        if (0 != (rc = _createDir("/var/vcap/packages/scx/var/lib/state/", uid, gid)))
+         {
+             return rc;
+         }
+ 
+-        if (0 != (rc = _createDir("/var/opt/microsoft/scx/log/", uid, gid)))
++        if (0 != (rc = _createDir("/var/vcap/sys/log/scx/", uid, gid)))
+         {
+             return rc;
+         }
+diff --git a/source/code/shared/tools/scx_admin/runasadminprovider.cpp b/source/code/shared/tools/scx_admin/runasadminprovider.cpp
+index d7ea1e5..4df1d72 100644
+--- a/source/code/shared/tools/scx_admin/runasadminprovider.cpp
++++ b/source/code/shared/tools/scx_admin/runasadminprovider.cpp
+@@ -21,8 +21,8 @@
+ */
+ SCX_RunAsAdminProvider::SCX_RunAsAdminProvider() :
+     m_Configurator( 
+-        SCXCoreLib::SCXHandle<SCXCore::ConfigurationParser>(new SCXCore::ConfigurationFileParser(L"/etc/opt/microsoft/scx/conf/scxrunas.conf")),
+-        SCXCoreLib::SCXHandle<SCXCore::ConfigurationWriter>(new SCXCore::ConfigurationFileWriter(L"/etc/opt/microsoft/scx/conf/scxrunas.conf"))),
++        SCXCoreLib::SCXHandle<SCXCore::ConfigurationParser>(new SCXCore::ConfigurationFileParser(L"/var/vcap/packages/scx/etc/conf/scxrunas.conf")),
++        SCXCoreLib::SCXHandle<SCXCore::ConfigurationWriter>(new SCXCore::ConfigurationFileWriter(L"/var/vcap/packages/scx/etc/conf/scxrunas.conf"))),
+     m_AllowRootDefault(true)
+ {
+     m_Configurator.Parse();
+diff --git a/source/code/shared/tools/scx_admin/scx_admin.cpp b/source/code/shared/tools/scx_admin/scx_admin.cpp
+index 7dc3c91..a85cfd2 100644
+--- a/source/code/shared/tools/scx_admin/scx_admin.cpp
++++ b/source/code/shared/tools/scx_admin/scx_admin.cpp
+@@ -80,7 +80,7 @@ public:
+ #if defined(WIN32)
+         return SCXFilePath(L"C:\\scxadminlog.conf");
+ #elif defined(SCX_UNIX)
+-        return SCXFilePath(L"/etc/opt/microsoft/scx/conf/scxadminlog.conf");
++        return SCXFilePath(L"/var/vcap/packages/scx/etc/conf/scxadminlog.conf");
+ #endif
+     }
+ 
+@@ -94,7 +94,7 @@ public:
+ #if defined(WIN32)
+         return SCXFilePath(L"C:\\scxadmin.log");
+ #elif defined(SCX_UNIX)
+-        return SCXFilePath(L"/var/opt/microsoft/scx/log/scxadmin.log");
++        return SCXFilePath(L"/var/vcap/sys/log/scx/scxadmin.log");
+ #endif
+     }
+ };
+diff --git a/source/code/shared/tools/scx_admin/servicecontrol.cpp b/source/code/shared/tools/scx_admin/servicecontrol.cpp
+index 33cb882..9a8bb33 100644
+--- a/source/code/shared/tools/scx_admin/servicecontrol.cpp
++++ b/source/code/shared/tools/scx_admin/servicecontrol.cpp
+@@ -192,7 +192,7 @@ void SCX_AdminServiceControl::ExecuteCommand( const std::wstring& command, std::
+    Default costructor for Cimom service controller.
+ */
+ SCX_CimomServiceControl::SCX_CimomServiceControl()
+-    : SCX_AdminServiceControl(L"omiserver", L"/opt/omi/bin/service_control start", L"/opt/omi/bin/service_control stop")
++    : SCX_AdminServiceControl(L"omiserver", L"/var/vcap/packages/omi/opt/bin/service_control start", L"/var/vcap/packages/omi/opt/bin/service_control stop")
+ {
+ 
+ }
+diff --git a/source/code/shared/tools/scx_ssl_config/scx_ssl_config.cpp b/source/code/shared/tools/scx_ssl_config/scx_ssl_config.cpp
+index 9778511..2df8e05 100644
+--- a/source/code/shared/tools/scx_ssl_config/scx_ssl_config.cpp
++++ b/source/code/shared/tools/scx_ssl_config/scx_ssl_config.cpp
+@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
+     bool debugMode = false;
+     bool testMode = false;
+     bool doGenerateCert = false;
+-    wstring targetPath = L"/etc/opt/omi/ssl";
++    wstring targetPath = L"/var/vcap/packages/omi/etc/ssl";
+     int startDays = -365;
+     int endDays = 7300;
+ #if defined(hpux) && defined(hppa)
+diff --git a/test/code/providers/runas_provider/scxrunasconfigurator_test.cpp b/test/code/providers/runas_provider/scxrunasconfigurator_test.cpp
+index 7bd1d68..8c38a97 100644
+--- a/test/code/providers/runas_provider/scxrunasconfigurator_test.cpp
++++ b/test/code/providers/runas_provider/scxrunasconfigurator_test.cpp
+@@ -100,7 +100,7 @@ public:
+             SCXCoreLib::SCXHandle<ConfigurationWriter>(0)).Parse();
+         CPPUNIT_ASSERT(p.GetAllowRoot() == true);
+         CPPUNIT_ASSERT(p.GetChRootPath() == SCXFilePath(L""));
+-        CPPUNIT_ASSERT(p.GetCWD() == SCXFilePath(L"/var/opt/microsoft/scx/tmp/"));
++        CPPUNIT_ASSERT(p.GetCWD() == SCXFilePath(L"/var/vcap/packages/scx/var/tmp/"));
+     }
+ 
+     void testCommentsAreIgnored()
+diff --git a/test/code/shared/tools/scx_admin/cmdparser_test.cpp b/test/code/shared/tools/scx_admin/cmdparser_test.cpp
+index c25db85..aa3111d 100644
+--- a/test/code/shared/tools/scx_admin/cmdparser_test.cpp
++++ b/test/code/shared/tools/scx_admin/cmdparser_test.cpp
+@@ -181,16 +181,16 @@ public:
+     
+     void testLogSetProv()
+     {
+-        PCHAR   argv[] = {"-log-set", "provider", "FILE:/var/opt/microsoft/scx/log/scx.log=TRACE"};
++        PCHAR   argv[] = {"-log-set", "provider", "FILE:/var/vcap/sys/log/scx/scx.log=TRACE"};
+ 
+         std::vector< Operation > operations = GivenParsedParameters(DIM(argv), argv);
+         // should return only one operation
+         CPPUNIT_ASSERT_EQUAL( static_cast<size_t>(1), operations.size() );
+         CPPUNIT_ASSERT( operations[0].m_eType == Operation::eOpType_Log_Prov_Set);
+-        CPPUNIT_ASSERT( operations[0].m_strName == L"FILE:/var/opt/microsoft/scx/log/scx.log");
++        CPPUNIT_ASSERT( operations[0].m_strName == L"FILE:/var/vcap/sys/log/scx/scx.log");
+         CPPUNIT_ASSERT( operations[0].m_strValue == L"TRACE");
+ 
+-        PCHAR   argv2[] = {"-log-set", "provider", "FILE:/var/opt/microsoft/scx/log/scx.log"};
++        PCHAR   argv2[] = {"-log-set", "provider", "FILE:/var/vcap/sys/log/scx/scx.log"};
+ 
+         std::wstring error_msg = GivenParseFailure(DIM(argv2), argv2);
+         CPPUNIT_ASSERT( ! error_msg.empty() );
+@@ -206,13 +206,13 @@ public:
+         CPPUNIT_ASSERT( operations[0].m_eType == Operation::eOpType_Log_Reset);
+         CPPUNIT_ASSERT( operations[0].m_eComponent == Operation::eCompType_Provider);
+ 
+-        PCHAR   argv2[] = {"-log-reset", "provider", "FILE:/var/opt/microsoft/scx/log/scx.log"};
++        PCHAR   argv2[] = {"-log-reset", "provider", "FILE:/var/vcap/sys/log/scx/scx.log"};
+ 
+         operations = GivenParsedParameters(DIM(argv2), argv2);
+         // should return only one operation
+         CPPUNIT_ASSERT_EQUAL( static_cast<size_t>(1), operations.size() );
+         CPPUNIT_ASSERT( operations[0].m_eType == Operation::eOpType_Log_Prov_Reset);
+-        CPPUNIT_ASSERT( operations[0].m_strName == L"FILE:/var/opt/microsoft/scx/log/scx.log");
++        CPPUNIT_ASSERT( operations[0].m_strName == L"FILE:/var/vcap/sys/log/scx/scx.log");
+     }
+     
+     void testLogRemoveProv()
+diff --git a/test/code/shared/tools/scx_admin/logconfigurator_test.cpp b/test/code/shared/tools/scx_admin/logconfigurator_test.cpp
+index 4ca4b96..edbe628 100644
+--- a/test/code/shared/tools/scx_admin/logconfigurator_test.cpp
++++ b/test/code/shared/tools/scx_admin/logconfigurator_test.cpp
+@@ -55,7 +55,7 @@ MODULE: module ERROR
+ )
+ 
+ FILE (
+-PATH: /var/opt/microsoft/scx/log/scx.log
++PATH: /var/vcap/sys/log/scx/scx.log
+ MODULE:  INFO
+ MODULE: module TRACE
+ )
+@@ -280,7 +280,7 @@ public:
+         // Positive test to set lower case entry: should create a new file with specific entries (upper case):
+         subject.Set( L"STDOUT", L"trace" );
+         subject.Set( L"STDOUT:scxtest.core.common.pal.system.common.entityenumeration", L"info" );
+-        subject.Set( L"FILE:/myvar/opt/microsoft/scx/log/scx.log:scxtest.core.common.pal.system.common.entityenumeration", L"info" );
++        subject.Set( L"FILE:/myvar/var/vcap/packages/scx/opt/log/scx.log:scxtest.core.common.pal.system.common.entityenumeration", L"info" );
+ 
+         std::string str = GetFileContent(cfgfile);
+ 
+@@ -292,7 +292,7 @@ public:
+         CPPUNIT_ASSERT( L"TRACE" == GetLogLevel(cfgfile, L"STDOUT", L"", L"") );
+         CPPUNIT_ASSERT( L"INFO" == GetLogLevel(cfgfile, L"STDOUT", L"", L"scxtest.core.common.pal.system.common.entityenumeration") );
+         CPPUNIT_ASSERT( L"INFO" == GetLogLevel(cfgfile, 
+-                                               L"FILE", L"/myvar/opt/microsoft/scx/log/scx.log",
++                                               L"FILE", L"/myvar/var/vcap/packages/scx/opt/log/scx.log",
+                                                L"scxtest.core.common.pal.system.common.entityenumeration") );
+     }
+ 
+@@ -309,7 +309,7 @@ public:
+             SCXAdminException );
+ 
+         CPPUNIT_ASSERT_THROW_MESSAGE( "invalid severity string: anything2",
+-            invTest.Set( L"FILE:/myvar/opt/microsoft/scx/log/scx.log:scxtest.core.common.pal.system.common.entityenumeration", L"anything2" ),
++            invTest.Set( L"FILE:/myvar/var/vcap/packages/scx/opt/log/scx.log:scxtest.core.common.pal.system.common.entityenumeration", L"anything2" ),
+             SCXAdminException );
+     }
+ 
+@@ -324,16 +324,16 @@ public:
+ 
+             subject.Set( L"STDOUT", L"trace" );
+             subject.Set( L"STDOUT:scxtest.core.common.pal.system.common.entityenumeration", L"info" );
+-            subject.Set( L"FILE:/myvar/opt/microsoft/scx/log/scx.log:scxtest.core.common.pal.system.common.entityenumeration", L"info" );
++            subject.Set( L"FILE:/myvar/var/vcap/packages/scx/opt/log/scx.log:scxtest.core.common.pal.system.common.entityenumeration", L"info" );
+         }
+         
+         SCX_LogConfigurator subject(cfgfile);
+ 
+         subject.Reset( L"STDOUT" );
+-        subject.Reset( L"FILE:/myvar/opt/microsoft/scx/log/scx.log" );
++        subject.Reset( L"FILE:/myvar/var/vcap/packages/scx/opt/log/scx.log" );
+ 
+         CPPUNIT_ASSERT_THROW_MESSAGE( "exception is expected since entry does not exist",
+-            subject.Reset( L"FILE:/var/opt/microsoft/scx/log/scx.log" ),
++            subject.Reset( L"FILE:/var/vcap/sys/log/scx/scx.log" ),
+             SCXAdminException );
+         
+         std::string str = GetFileContent(cfgfile);
+@@ -346,7 +346,7 @@ public:
+         // but should see these:
+         CPPUNIT_ASSERT( str.find("STDOUT")  != str.npos );
+         CPPUNIT_ASSERT( str.find("FILE")  != str.npos );
+-        CPPUNIT_ASSERT( str.find("PATH: /myvar/opt/microsoft/scx/log/scx.log")  != str.npos );
++        CPPUNIT_ASSERT( str.find("PATH: /myvar/var/vcap/packages/scx/opt/log/scx.log")  != str.npos );
+     }
+ 
+     // provider set
+@@ -360,7 +360,7 @@ public:
+ 
+             subject.Set( L"STDOUT", L"trace" );
+             subject.Set( L"STDOUT:scxtest.core.common.pal.system.common.entityenumeration", L"info" );
+-            subject.Set( L"FILE:/myvar/opt/microsoft/scx/log/scx.log:scxtest.core.common.pal.system.common.entityenumeration", L"info" );
++            subject.Set( L"FILE:/myvar/var/vcap/packages/scx/opt/log/scx.log:scxtest.core.common.pal.system.common.entityenumeration", L"info" );
+         }
+         
+         SCX_LogConfigurator subject(cfgfile);
+@@ -368,7 +368,7 @@ public:
+         subject.Remove( L"STDOUT" );
+ 
+         CPPUNIT_ASSERT_THROW_MESSAGE( "exception is expected since entry does not exist",
+-            subject.Remove( L"FILE:/var/opt/microsoft/scx/log/scx.log" ),
++            subject.Remove( L"FILE:/var/vcap/sys/log/scx/scx.log" ),
+             SCXAdminException );
+ 
+         std::string str = GetFileContent(cfgfile);
+@@ -380,7 +380,7 @@ public:
+ 
+         // but should see these:
+         CPPUNIT_ASSERT( str.find("FILE")  != str.npos );
+-        CPPUNIT_ASSERT( str.find("PATH: /myvar/opt/microsoft/scx/log/scx.log")  != str.npos );
++        CPPUNIT_ASSERT( str.find("PATH: /myvar/var/vcap/packages/scx/opt/log/scx.log")  != str.npos );
+         CPPUNIT_ASSERT( str.find("MODULE: scxtest.core.common.pal.system.common.entityenumeration INFO")  != str.npos );
+     }
+ 
+@@ -398,11 +398,11 @@ public:
+         subject.Set( L"STDOUT:module", L"TRACE" );
+         subject.Set( L"stdout:module", L"INFO" );
+ 
+-        subject.Set( L"FILE:/var/opt/microsoft/scx/log/scx.log:module", L"TRACE" );
+-        subject.Set( L"file:/var/opt/microsoft/scx/log/scx.log:module", L"ERROR" );
++        subject.Set( L"FILE:/var/vcap/sys/log/scx/scx.log:module", L"TRACE" );
++        subject.Set( L"file:/var/vcap/sys/log/scx/scx.log:module", L"ERROR" );
+ 
+         CPPUNIT_ASSERT( L"INFO" == GetLogLevel(cfgfile, L"STDOUT", L"", L"module") );
+-        CPPUNIT_ASSERT( L"ERROR" == GetLogLevel(cfgfile, L"FILE", L"/var/opt/microsoft/scx/log/scx.log", L"module") );
++        CPPUNIT_ASSERT( L"ERROR" == GetLogLevel(cfgfile, L"FILE", L"/var/vcap/sys/log/scx/scx.log", L"module") );
+     }
+ 
+     /**
+@@ -416,10 +416,10 @@ public:
+ 
+         SCX_LogConfigurator subject(cfgfile);
+ 
+-        subject.Set( L"FILE:/var/opt/microsoft/scx/log/scx.log:module", L"TRACE" );
++        subject.Set( L"FILE:/var/vcap/sys/log/scx/scx.log:module", L"TRACE" );
+         subject.Set( L"FILE:/VAR/Opt/Microsoft/scx/log/scx.log:module", L"ERROR" );
+ 
+-        CPPUNIT_ASSERT( L"TRACE" == GetLogLevel(cfgfile, L"FILE", L"/var/opt/microsoft/scx/log/scx.log", L"module") );
++        CPPUNIT_ASSERT( L"TRACE" == GetLogLevel(cfgfile, L"FILE", L"/var/vcap/sys/log/scx/scx.log", L"module") );
+         CPPUNIT_ASSERT( L"ERROR" == GetLogLevel(cfgfile, L"FILE", L"/VAR/Opt/Microsoft/scx/log/scx.log", L"module") );
+     }
+ 
+diff --git a/test/code/shared/tools/scx_admin/runasadminprovider_test.cpp b/test/code/shared/tools/scx_admin/runasadminprovider_test.cpp
+index 39ad748..aa5e06c 100644
+--- a/test/code/shared/tools/scx_admin/runasadminprovider_test.cpp
++++ b/test/code/shared/tools/scx_admin/runasadminprovider_test.cpp
+@@ -120,7 +120,7 @@ public:
+         SCX_RunAsAdminProvider conf = GivenAdminProviderWithEmptyConfiguration();
+         std::wostringstream buf;
+         CPPUNIT_ASSERT(conf.Print(buf));
+-        CPPUNIT_ASSERT(L"CWD = /var/opt/microsoft/scx/tmp/\nChRootPath = \nAllowRoot = true\n" == buf.str());
++        CPPUNIT_ASSERT(L"CWD = /var/vcap/packages/scx/var/tmp/\nChRootPath = \nAllowRoot = true\n" == buf.str());
+     }
+ 
+     void TestWriteAndRead()
+@@ -173,7 +173,7 @@ public:
+         
+         std::wostringstream buf;
+         CPPUNIT_ASSERT(conf.Print(buf));
+-        CPPUNIT_ASSERT(L"CWD = /var/opt/microsoft/scx/tmp/\nChRootPath = \nAllowRoot = true\n" == buf.str());
++        CPPUNIT_ASSERT(L"CWD = /var/vcap/packages/scx/var/tmp/\nChRootPath = \nAllowRoot = true\n" == buf.str());
+     }
+ 
+     void TestResetAllowRootWithNoSSHConfFile()
+@@ -184,7 +184,7 @@ public:
+         CPPUNIT_ASSERT(conf.Reset(L"AllowRoot"));
+         std::wostringstream buf;
+         CPPUNIT_ASSERT(conf.Print(buf));
+-        CPPUNIT_ASSERT(L"CWD = /var/opt/microsoft/scx/tmp/\nChRootPath = \nAllowRoot = true\n" == buf.str());
++        CPPUNIT_ASSERT(L"CWD = /var/vcap/packages/scx/var/tmp/\nChRootPath = \nAllowRoot = true\n" == buf.str());
+     }
+ 
+     void TestResetAllowRootWithNoSSHConf()
+@@ -203,7 +203,7 @@ public:
+         CPPUNIT_ASSERT(conf.Reset(L"AllowRoot"));
+         std::wostringstream buf;
+         CPPUNIT_ASSERT(conf.Print(buf));
+-        CPPUNIT_ASSERT(L"CWD = /var/opt/microsoft/scx/tmp/\nChRootPath = \nAllowRoot = true\n" == buf.str());
++        CPPUNIT_ASSERT(L"CWD = /var/vcap/packages/scx/var/tmp/\nChRootPath = \nAllowRoot = true\n" == buf.str());
+     }
+ 
+     void TestResetAllowRootWithSSHConfTrue()
+@@ -219,7 +219,7 @@ public:
+         CPPUNIT_ASSERT(conf.Reset(L"AllowRoot"));
+         std::wostringstream buf;
+         CPPUNIT_ASSERT(conf.Print(buf));
+-        CPPUNIT_ASSERT(L"CWD = /var/opt/microsoft/scx/tmp/\nChRootPath = \nAllowRoot = true\n" == buf.str());
++        CPPUNIT_ASSERT(L"CWD = /var/vcap/packages/scx/var/tmp/\nChRootPath = \nAllowRoot = true\n" == buf.str());
+     }
+ 
+     void TestResetAllowRootWithSSHConfFalse()
+@@ -235,7 +235,7 @@ public:
+         CPPUNIT_ASSERT(conf.Reset(L"AllowRoot"));
+         std::wostringstream buf;
+         CPPUNIT_ASSERT(conf.Print(buf));
+-        CPPUNIT_ASSERT(L"CWD = /var/opt/microsoft/scx/tmp/\nChRootPath = \nAllowRoot = false\n" == buf.str());
++        CPPUNIT_ASSERT(L"CWD = /var/vcap/packages/scx/var/tmp/\nChRootPath = \nAllowRoot = false\n" == buf.str());
+     }
+ 
+     /**
+diff --git a/test/code/shared/tools/scx_admin/service_control_test.cpp b/test/code/shared/tools/scx_admin/service_control_test.cpp
+index d92d70e..ad75409 100644
+--- a/test/code/shared/tools/scx_admin/service_control_test.cpp
++++ b/test/code/shared/tools/scx_admin/service_control_test.cpp
+@@ -109,13 +109,13 @@ public:
+     void StartScriptForCimdOK(void)
+     {
+         TestServiceControlCimom svc;
+-        CPPUNIT_ASSERT(svc.GetStart() == L"/opt/omi/bin/service_control start");
++        CPPUNIT_ASSERT(svc.GetStart() == L"/var/vcap/packages/omi/opt/bin/service_control start");
+     }
+ 
+     void StopScriptForCimdOK(void)
+     {
+         TestServiceControlCimom svc;
+-        CPPUNIT_ASSERT(svc.GetStop() == L"/opt/omi/bin/service_control stop");
++        CPPUNIT_ASSERT(svc.GetStop() == L"/var/vcap/packages/omi/opt/bin/service_control stop");
+     }
+ 
+     void ServiceStartRunsScriptOK(void)
+diff --git a/test/util/artifacts/runas-memleak/testleak.sh b/test/util/artifacts/runas-memleak/testleak.sh
+index 8eb7d06..b1546af 100755
+--- a/test/util/artifacts/runas-memleak/testleak.sh
++++ b/test/util/artifacts/runas-memleak/testleak.sh
+@@ -11,7 +11,7 @@ Provide_ExShell_Load()
+     while [ $I -lt 350 ]; do
+         R=$(($I % 25))
+         [ $R -eq 0 ] && echo -n "."
+-        /opt/omi/bin/omicli iv root/scx { SCX_OperatingSystem } ExecuteShellCommand { command "$FULLPATH" timeout 0 } > /dev/null
++        /var/vcap/packages/omi/opt/bin/omicli iv root/scx { SCX_OperatingSystem } ExecuteShellCommand { command "$FULLPATH" timeout 0 } > /dev/null
+         I=$(( $I + 1 ))
+     done
+ 
+@@ -36,7 +36,7 @@ Provide_ExScript_Load()
+     while [ $I -lt 350 ]; do
+         R=$(($I % 25))
+         [ $R -eq 0 ] && echo -n "."
+-        /opt/omi/bin/omicli iv root/scx { SCX_OperatingSystem } ExecuteScript { Script "ZWNobyAiIg0KZWNobyAiSGVsbG8iDQplY2hvICJHb29kYnllIg==" Arguments "" timeout 0 b64encoded "true" } > /dev/null
++        /var/vcap/packages/omi/opt/bin/omicli iv root/scx { SCX_OperatingSystem } ExecuteScript { Script "ZWNobyAiIg0KZWNobyAiSGVsbG8iDQplY2hvICJHb29kYnllIg==" Arguments "" timeout 0 b64encoded "true" } > /dev/null
+         I=$(( $I + 1 ))
+     done
+ 
+@@ -52,7 +52,7 @@ Provide_ExCommand_Load()
+     while [ $I -lt 350 ]; do
+         R=$(($I % 25))
+         [ $R -eq 0 ] && echo -n "."
+-        /opt/omi/bin/omicli iv root/scx { SCX_OperatingSystem } ExecuteCommand { command hostname timeout 0 } > /dev/null
++        /var/vcap/packages/omi/opt/bin/omicli iv root/scx { SCX_OperatingSystem } ExecuteCommand { command hostname timeout 0 } > /dev/null
+         I=$(( $I + 1 ))
+     done
+ 
+@@ -80,7 +80,7 @@ ARRAY=( Provide_ExShell_Load Provide_ExScript_Load Provide_ExCommand_Load )
+ set -e
+ 
+ echo "Invoking RunAs provider (to insure it's running) ..."
+-/opt/omi/bin/omicli iv root/scx { SCX_OperatingSystem } ExecuteShellCommand { command "echo Hello World" timeout 0 }
++/var/vcap/packages/omi/opt/bin/omicli iv root/scx { SCX_OperatingSystem } ExecuteShellCommand { command "echo Hello World" timeout 0 }
+ 
+ echo
+ echo "Starting values for omiagent process:"
+diff --git a/tools/chroot/suse-sles10/README b/tools/chroot/suse-sles10/README
+index 66f9665..e018c7a 100644
+--- a/tools/chroot/suse-sles10/README
++++ b/tools/chroot/suse-sles10/README
+@@ -8,13 +8,13 @@
+ 
+ 
+ STEP 1  
+-Create a directory named "chroot" under /var/opt/microsoft/scx/ on a server with 
++Create a directory named "chroot" under /var/vcap/packages/scx/var/ on a server with 
+ SCX Agent already installed.
+ Copy the chroot scripts (mkjail-wsmand.sh and scx-wsmand.chroot) to this new
+ directory.
+ Ensure ownership is root.root and permissions are 744
+ 
+-# cd /var/opt/microsoft/scx
++# cd /var/vcap/packages/scx/var
+ # mkdir chroot
+ # cd chroot
+ # cp <ORIGINAL-FILE-LOCATION>/mkjail-wsmand.sh ./
+@@ -26,7 +26,7 @@ Ensure ownership is root.root and permissions are 744
+ STEP 2
+ Create the jail
+ 
+-# cd /var/opt/microsoft/scx/chroot
++# cd /var/vcap/packages/scx/var/chroot
+ # ./mkjail-wsmand.sh
+ 
+ 
+diff --git a/tools/chroot/suse-sles10/mkjail-wsmand.sh b/tools/chroot/suse-sles10/mkjail-wsmand.sh
+index 06b7d5f..8ac1a7a 100644
+--- a/tools/chroot/suse-sles10/mkjail-wsmand.sh
++++ b/tools/chroot/suse-sles10/mkjail-wsmand.sh
+@@ -4,7 +4,7 @@
+ # Copyright (c) Microsoft Corporation.  All rights reserved.
+ #
+ 
+-SCX_WSMAND_CHROOT=/var/opt/microsoft/scx/chroot/wsmand
++SCX_WSMAND_CHROOT=/var/vcap/packages/scx/var/chroot/wsmand
+ 
+ if [ -d ${SCX_WSMAND_CHROOT} ]; then
+   echo "Jail already exist in ${SCX_WSMAND_CHROOT}"
+@@ -70,8 +70,8 @@ execute mknod -m 444 ${SCX_WSMAND_CHROOT}/dev/urandom c 1 9
+ 
+ # etc
+ createdir ${SCX_WSMAND_CHROOT}/etc
+-copyfile /etc/opt/microsoft/scx/conf/openwsman.conf 
+-copyfile /etc/opt/microsoft/scx/ssl/scx-seclevel1-key.pem /etc/opt/microsoft/scx/ssl/scx-seclevel1.pem
++copyfile /var/vcap/packages/scx/etc/conf/openwsman.conf 
++copyfile /var/vcap/packages/scx/etc/ssl/scx-seclevel1-key.pem /var/vcap/packages/scx/etc/ssl/scx-seclevel1.pem
+ copyfile /etc/passwd /etc/group /etc/shadow /etc/nsswitch.conf
+ copydir /etc/security
+ copyfile /etc/pam.d/scx
+@@ -123,15 +123,15 @@ copylink /lib/libxcrypt.so.1
+ copylink /lib/libz.so.1
+ 
+ # opt
+-copyfile /opt/microsoft/scx/COPYRIGHT
+-copyfile /opt/microsoft/scx/LICENSE
+-copyfile /opt/microsoft/scx/bin/openwsmand
+-copylink /opt/microsoft/scx/lib/libpegclient.so
+-copylink /opt/microsoft/scx/lib/libpegcommon.so
+-copylink /opt/microsoft/scx/lib/libwsman.so
+-copylink /opt/microsoft/scx/lib/libwsman_server.so
+-copylink /opt/microsoft/scx/lib/openwsman/authenticators/libwsman_pam_auth.so
+-copylink /opt/microsoft/scx/lib/openwsman/plugins/libwsman_cim_plugin.so
++copyfile /var/vcap/packages/scx/opt/COPYRIGHT
++copyfile /var/vcap/packages/scx/opt/LICENSE
++copyfile /var/vcap/packages/scx/opt/bin/openwsmand
++copylink /var/vcap/packages/scx/opt/lib/libpegclient.so
++copylink /var/vcap/packages/scx/opt/lib/libpegcommon.so
++copylink /var/vcap/packages/scx/opt/lib/libwsman.so
++copylink /var/vcap/packages/scx/opt/lib/libwsman_server.so
++copylink /var/vcap/packages/scx/opt/lib/openwsman/authenticators/libwsman_pam_auth.so
++copylink /var/vcap/packages/scx/opt/lib/openwsman/plugins/libwsman_cim_plugin.so
+ 
+ # usr
+ copylink /usr/lib/libcrack.so.2
+@@ -141,9 +141,9 @@ copylink /usr/lib/libstdc++.so.6
+ copylink /usr/lib/libxml2.so.2
+ 
+ # var
+-createdir ${SCX_WSMAND_CHROOT}/var/opt/microsoft/scx/log
+-createdir ${SCX_WSMAND_CHROOT}/var/opt/microsoft/scx/tmp
+-execute touch ${SCX_WSMAND_CHROOT}/var/opt/microsoft/scx/log/wsmand.log
++createdir ${SCX_WSMAND_CHROOT}/var/vcap/sys/log/scx
++createdir ${SCX_WSMAND_CHROOT}/var/vcap/packages/scx/var/tmp
++execute touch ${SCX_WSMAND_CHROOT}/var/vcap/sys/log/scx/wsmand.log
+ 
+ # create startup script
+ execute cp `dirname ${SCX_WSMAND_CHROOT}`/scx-wsmand.chroot /etc/init.d/
+diff --git a/tools/chroot/suse-sles10/scx-wsmand.chroot b/tools/chroot/suse-sles10/scx-wsmand.chroot
+index 507c705..581b52c 100644
+--- a/tools/chroot/suse-sles10/scx-wsmand.chroot
++++ b/tools/chroot/suse-sles10/scx-wsmand.chroot
+@@ -16,25 +16,25 @@
+ # Description:       Microsoft System Center Agent - WS-Management daemon
+ ### END INIT INFO
+ 
+-SCX_HOME=/opt/microsoft/scx
++SCX_HOME=/var/vcap/packages/scx/opt
+ SCX_WSMAND_NAME="Microsoft SCX WS-Management Daemon"
+ 
+-SCX_WSMAND_BIN=/opt/microsoft/scx/bin/openwsmand
++SCX_WSMAND_BIN=/var/vcap/packages/scx/opt/bin/openwsmand
+ test -x $SCX_WSMAND_BIN || { echo "$SCX_WSMAND_BIN not installed"; 
+     if [ "$1" = "stop" ]; then exit 0;
+     else exit 5; fi; }
+ 
+ # Check for existence of needed config file and read it
+-SCX_WSMAND_CONFIG=/etc/opt/microsoft/scx/conf/openwsman.conf
++SCX_WSMAND_CONFIG=/var/vcap/packages/scx/etc/conf/openwsman.conf
+ test -r $SCX_WSMAND_CONFIG || { echo "$SCX_WSMAND_CONFIG not existing";
+     if [ "$1" = "stop" ]; then exit 0;
+     else exit 6; fi; }
+ 
+ # PID File
+-SCX_WSMAND_PIDFILE=/var/opt/microsoft/scx/tmp/scx-wsmand.pid
++SCX_WSMAND_PIDFILE=/var/vcap/packages/scx/var/tmp/scx-wsmand.pid
+ 
+ # CHROOT
+-SCX_WSMAND_CHROOT=/var/opt/microsoft/scx/chroot/wsmand
++SCX_WSMAND_CHROOT=/var/vcap/packages/scx/var/chroot/wsmand
+ 
+ if test -e /etc/rc.status; then
+     . /etc/rc.status
+@@ -53,8 +53,8 @@ case "$1" in
+           service scx-cimd status
+           if [ $? -eq 0 ]; then
+             echo -n "Creating cim.socket in jail"
+-            rm -f ${SCX_WSMAND_CHROOT}/var/opt/microsoft/scx/tmp/cim.socket
+-            ln /var/opt/microsoft/scx/tmp/cim.socket ${SCX_WSMAND_CHROOT}/var/opt/microsoft/scx/tmp/cim.socket
++            rm -f ${SCX_WSMAND_CHROOT}/var/vcap/packages/scx/var/tmp/cim.socket
++            ln /var/vcap/packages/scx/var/tmp/cim.socket ${SCX_WSMAND_CHROOT}/var/vcap/packages/scx/var/tmp/cim.socket
+             if [ $? -eq 0 ]; then
+               rc_status -v
+               echo -n "Starting $SCX_WSMAND_NAME "
+@@ -75,7 +75,7 @@ case "$1" in
+     stop)
+         echo -n "Shutting down $SCX_WSMAND_NAME "
+         killall openwsmand
+-        rm -f ${SCX_WSMAND_CHROOT}/var/opt/microsoft/scx/tmp/cim.socket
++        rm -f ${SCX_WSMAND_CHROOT}/var/vcap/packages/scx/var/tmp/cim.socket
+         rc_status -v
+         ;;
+     restart)

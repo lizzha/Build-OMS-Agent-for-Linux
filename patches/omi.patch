@@ -1,0 +1,859 @@
+diff --git a/Unix/configeditor/configeditor.cpp b/Unix/configeditor/configeditor.cpp
+index b5b9caa..03a85fb 100644
+--- a/Unix/configeditor/configeditor.cpp
++++ b/Unix/configeditor/configeditor.cpp
+@@ -47,9 +47,9 @@ OPTIONS:\n\
+ \n\
+ EXAMPLES:\n\
+     The following will add \"1270\" to property httpsport in file\n\
+-    /etc/opt/omi/conf/omiserver.conf:\n\
++    /var/vcap/packages/omi/etc/conf/omiserver.conf:\n\
+ \n\
+-      $ omiconfigeditor httpsport -a 1270 < /etc/opt/omi/conf/omiserver.conf\n\
++      $ omiconfigeditor httpsport -a 1270 < /var/vcap/packages/omi/etc/conf/omiserver.conf\n\
+ \n\
+ ");
+ 
+diff --git a/Unix/configure b/Unix/configure
+index e9de4ce..382ee67 100755
+--- a/Unix/configure
++++ b/Unix/configure
+@@ -286,7 +286,7 @@ OPTIONS:
+     --enable-werror         Treat warnings as errors.
+     --enable-wchar          Use 'wchar_t' character type [char].
+     --target=TARGET         Cross-compiler for the given platform.
+-    --prefix=PATH           The installation prefix [/opt/omi-$version]
++    --prefix=PATH           The installation prefix [/var/vcap/packages/omi/opt/omi-$version]
+     --libdir=PATH           Install library components here [*/lib].
+     --bindir=PATH           Install programs here [*/bin].
+     --includedir=PATH       Install C/C++ include files here [*/include].
+@@ -401,7 +401,7 @@ compiler=`$buildtool compiler $buildtoolopts`
+ ##==============================================================================
+ 
+ if [ -z "$prefix" ]; then
+-    prefix=/opt/omi-$version
++    prefix=/var/vcap/packages/omi/opt/omi-$version
+ fi
+ 
+ if [ -z "$bindir" ]; then
+diff --git a/Unix/installbuilder/conf/omiserver.conf b/Unix/installbuilder/conf/omiserver.conf
+index 25b9729..9bba260 100644
+--- a/Unix/installbuilder/conf/omiserver.conf
++++ b/Unix/installbuilder/conf/omiserver.conf
+@@ -31,18 +31,18 @@ httpsport=0
+ #providerdir=PATH
+ #certsdir=PATH
+ #datadir=PATH
+-rundir=/var/opt/omi/run
++rundir=/var/vcap/sys/run/omi
+ #logdir=PATH
+ #schemadir=PATH
+ #schemafile=PATH
+-pidfile=/var/opt/omi/run/omiserver.pid
+-logfile=/var/opt/omi/log/omiserver.log
+-registerdir=/etc/opt/omi/conf/omiregister
+-pemfile=/etc/opt/omi/ssl/omi.pem
+-keyfile=/etc/opt/omi/ssl/omikey.pem
++pidfile=/var/vcap/sys/run/omi/omiserver.pid
++logfile=/var/vcap/sys/log/omi/omiserver.log
++registerdir=/var/vcap/packages/omi/etc/conf/omiregister
++pemfile=/var/vcap/packages/omi/etc/ssl/omi.pem
++keyfile=/var/vcap/packages/omi/etc/ssl/omikey.pem
+ #agentprogram=PATH
+ #serverprogram=PATH
+ #includedir=PATH
+-configfile=/etc/opt/omi/conf/omiserver.conf
++configfile=/var/vcap/packages/omi/etc/conf/omiserver.conf
+ #NoSSLv2=true
+ #NoSSLv3=false
+diff --git a/Unix/installbuilder/datafiles/AIX.data b/Unix/installbuilder/datafiles/AIX.data
+index aaa4f3a..215d064 100644
+--- a/Unix/installbuilder/datafiles/AIX.data
++++ b/Unix/installbuilder/datafiles/AIX.data
+@@ -2,24 +2,24 @@
+ ROOT_GROUP_NAME: 'system'
+ pam_dir_passwd:  'auth required /usr/lib/security/pam_aix\naccount required /usr/lib/security/pam_aix'
+ pam_file_passwd: 'omi auth required /usr/lib/security/pam_aix\nomi account required /usr/lib/security/pam_aix'
+-SERVICE_SCRIPT:  '/opt/omi/bin/service_control'
++SERVICE_SCRIPT:  '/var/vcap/packages/omi/opt/bin/service_control'
+ 
+ %Files
+-/opt/omi/bin/service_control;                 ../installbuilder/service_scripts/service_control.unix; 755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/bin/service_control;                 ../installbuilder/service_scripts/service_control.unix; 755; root; ${{ROOT_GROUP_NAME}}
+ 
+ %Directories
+ /usr/lpp; 755; root; ${{ROOT_GROUP_NAME}}; sysdir
+ /usr/lpp/omi.rte; 755; root; ${{ROOT_GROUP_NAME}}
+-/opt/omi/lib;                            755; root; ${{ROOT_GROUP_NAME}}
+-/etc/opt/omi/conf/omiregister;           755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/lib;                            755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/etc/conf/omiregister;           755; root; ${{ROOT_GROUP_NAME}}
+ 
+ %OmiService_funcs
+ 
+-# We use existence of /opt/omi/bin/service_control as a way to sense what
++# We use existence of /var/vcap/packages/omi/opt/bin/service_control as a way to sense what
+ # the service name will be: If service_control exists, service name is omid
+ 
+ StopOmiService() {
+-    if [ -f /var/opt/omi/run/omiserver.pid ]; then
++    if [ -f /var/vcap/sys/run/omi/omiserver.pid ]; then
+         if [ -f ${{SERVICE_SCRIPT}} ]; then
+             stopsrc -c -s omid
+         else
+@@ -66,8 +66,8 @@ fi
+ 
+ # Add new entry to /etc/inittab and start our service
+ 
+-mkssys -s omid -p /opt/omi/bin/omiserver -u root -S -n 15 -f 9 -G omi
+-mkitab 'omid:2:once:/usr/bin/startsrc -s omid -e "LD_LIBRARY_PATH=/opt/omi/lib" > /dev/console 2>&1'
++mkssys -s omid -p /var/vcap/packages/omi/opt/bin/omiserver -u root -S -n 15 -f 9 -G omi
++mkitab 'omid:2:once:/usr/bin/startsrc -s omid -e "LD_LIBRARY_PATH=/var/vcap/packages/omi/opt/lib" > /dev/console 2>&1'
+ ${{SERVICE_SCRIPT}} start
+ 
+ %Preuninstall_10
+diff --git a/Unix/installbuilder/datafiles/Base_OMI.data b/Unix/installbuilder/datafiles/Base_OMI.data
+index 6dd007c..7e0213d 100644
+--- a/Unix/installbuilder/datafiles/Base_OMI.data
++++ b/Unix/installbuilder/datafiles/Base_OMI.data
+@@ -1,5 +1,5 @@
+ %Variables
+-SHORT_NAME: 'omi'
++SHORT_NAME: 'omi-bosh'
+ LONG_NAME: 'Open Management Infrastructure'
+ SHELL_HEADER: '#!/bin/sh'
+ SHORT_NAME_PREFIX: 'MSFT'
+@@ -19,48 +19,51 @@ PAM_CONF_FILE: '/etc/pam.conf'
+ PAM_CONF_DIR: '/etc/pam.d'
+ 
+ %Files
+-/opt/omi/LICENSE;                             ../../LICENSE;                         644; root; ${{ROOT_GROUP_NAME}}
+-/opt/omi/bin/omiagent;                        bin/omiagent;                          755; root; ${{ROOT_GROUP_NAME}}
+-/opt/omi/bin/omiserver;                       bin/omiserver;                         755; root; ${{ROOT_GROUP_NAME}}
+-/opt/omi/bin/omicli;                          bin/omicli;                            755; root; ${{ROOT_GROUP_NAME}}
+-/opt/omi/bin/omicheck;                        bin/omicheck;                          755; root; ${{ROOT_GROUP_NAME}}
+-/opt/omi/bin/omireg;                          bin/omireg;                            755; root; ${{ROOT_GROUP_NAME}}
+-/opt/omi/bin/omigen;                          bin/omigen;                            755; root; ${{ROOT_GROUP_NAME}}
+-/opt/omi/bin/omiconfigeditor;                 bin/omiconfigeditor;                   755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/LICENSE;                             ../../LICENSE;                         644; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/bin/omiagent;                        bin/omiagent;                          755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/bin/omiserver;                       bin/omiserver;                         755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/bin/omicli;                          bin/omicli;                            755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/bin/omicheck;                        bin/omicheck;                          755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/bin/omireg;                          bin/omireg;                            755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/bin/omigen;                          bin/omigen;                            755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/bin/omiconfigeditor;                 bin/omiconfigeditor;                   755; root; ${{ROOT_GROUP_NAME}}
+ #if PF != Linux
+-/opt/omi/lib/libpal.${{SHLIB_EXT}};           lib/libpal.${{SHLIB_EXT}};             755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/lib/libpal.${{SHLIB_EXT}};           lib/libpal.${{SHLIB_EXT}};             755; root; ${{ROOT_GROUP_NAME}}
+ #endif
+-/opt/omi/lib/libmi.${{SHLIB_EXT}};            lib/libmi.${{SHLIB_EXT}};           755; root; ${{ROOT_GROUP_NAME}}
+-/opt/omi/lib/libmicxx.${{SHLIB_EXT}};         lib/libmicxx.${{SHLIB_EXT}};           755; root; ${{ROOT_GROUP_NAME}}
+-/opt/omi/lib/libomiclient.${{SHLIB_EXT}};     lib/libomiclient.${{SHLIB_EXT}};       755; root; ${{ROOT_GROUP_NAME}}
+-/opt/omi/lib/libomiidentify.${{SHLIB_EXT}};   lib/libomiidentify.${{SHLIB_EXT}};     755; root; ${{ROOT_GROUP_NAME}}
+-/etc/opt/omi/conf/omicli.conf;                ../etc/omicli.conf;                    444; root; sys
+-/etc/opt/omi/conf/omiserver.conf;             ../installbuilder/conf/omiserver.conf; 444; root; sys; conffile
+-/etc/opt/omi/conf/omigen.conf;                ../etc/omigen.conf;                    444; root; sys
+-/etc/opt/omi/conf/omiregister/root-omi/omiidentify.reg; ../etc/omiregister/root-omi/omiidentify.reg; 755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/lib/libmi.${{SHLIB_EXT}};            lib/libmi.${{SHLIB_EXT}};           755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/lib/libmicxx.${{SHLIB_EXT}};         lib/libmicxx.${{SHLIB_EXT}};           755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/lib/libomiclient.${{SHLIB_EXT}};     lib/libomiclient.${{SHLIB_EXT}};       755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/lib/libomiidentify.${{SHLIB_EXT}};   lib/libomiidentify.${{SHLIB_EXT}};     755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/etc/conf/omicli.conf;                ../etc/omicli.conf;                    444; root; sys
++/var/vcap/packages/omi/etc/conf/omiserver.conf;             ../installbuilder/conf/omiserver.conf; 444; root; sys; conffile
++/var/vcap/packages/omi/etc/conf/omigen.conf;                ../etc/omigen.conf;                    444; root; sys
++/var/vcap/packages/omi/etc/conf/omiregister/root-omi/omiidentify.reg; ../etc/omiregister/root-omi/omiidentify.reg; 755; root; ${{ROOT_GROUP_NAME}}
+ 
+ %Directories
+-/opt;                                    755; root; ${{ROOT_GROUP_NAME}}; sysdir
+-/opt/omi;                                755; root; ${{ROOT_GROUP_NAME}}
+-/opt/omi/bin;                            755; root; ${{ROOT_GROUP_NAME}}
+-/etc/opt;                                755; root; ${{ROOT_GROUP_NAME}}; sysdir
+-/etc/opt/omi;                            755; root; ${{ROOT_GROUP_NAME}}
+-/etc/opt/omi/conf;                       755; root; ${{ROOT_GROUP_NAME}}
+-/etc/opt/omi/conf/omiregister/root-omi;  755; root; ${{ROOT_GROUP_NAME}}
+-/etc/opt/omi/ssl;                        755; root; ${{ROOT_GROUP_NAME}}
+-/var/opt;                                755; root; ${{ROOT_GROUP_NAME}}; sysdir
+-/var/opt/omi;                            755; root; ${{ROOT_GROUP_NAME}}
+-/var/opt/omi/log;                        755; root; ${{ROOT_GROUP_NAME}}
+-/var/opt/omi/lib;                        755; root; ${{ROOT_GROUP_NAME}}
+-/var/opt/omi/run;                        755; root; ${{ROOT_GROUP_NAME}}
+-/var/opt/omi/tmp;                        755; root; ${{ROOT_GROUP_NAME}}
+-/var/opt/omi/omiauth;                    755; root; ${{ROOT_GROUP_NAME}}
+-/etc/init.d;                             755; root; sys; sysdir
++%% /opt;                                    755; root; ${{ROOT_GROUP_NAME}}; sysdir
++/var/vcap/packages/omi;                                755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt;                                755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/bin;                            755; root; ${{ROOT_GROUP_NAME}}
++%% /etc/opt;                                755; root; ${{ROOT_GROUP_NAME}}; sysdir
++/var/vcap/packages/omi/etc;                            755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/etc/conf;                       755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/etc/conf/omiregister/root-omi;  755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/etc/ssl;                        755; root; ${{ROOT_GROUP_NAME}}
++%% /var/opt;                                755; root; ${{ROOT_GROUP_NAME}}; sysdir
++/var/vcap/packages/omi/var;                            755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/sys/log/omi;                        755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/var/lib;                        755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/sys/run/omi;                        755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/var/tmp;                        755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/var/omiauth;                    755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/var/run;                        755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/var/log;                        755; root; ${{ROOT_GROUP_NAME}}
++%% /etc/init.d;                             755; root; sys; sysdir
+ 
+ %% Somebody has to "own" these, and everything depends on OMI ...
+-/etc/opt/microsoft;                      755; root; ${{ROOT_GROUP_NAME}}
+-/opt/microsoft;                          755; root; ${{ROOT_GROUP_NAME}}
+-/var/opt/microsoft;                      755; root; ${{ROOT_GROUP_NAME}}
++%% /etc/opt/microsoft;                      755; root; ${{ROOT_GROUP_NAME}}
++%% /opt/microsoft;                          755; root; ${{ROOT_GROUP_NAME}}
++%% /var/opt/microsoft;                      755; root; ${{ROOT_GROUP_NAME}}
+ 
+ %Links
+ 
+@@ -72,16 +75,16 @@ GetNewPAMConfig_file() {
+     # See if we have special marker file to use for PAM
+     # For ease in customer debugging, return bad config if file is bad
+     #
+-    if [ -f /etc/opt/omi/conf/pam.conf ]; then
++    if [ -f /var/vcap/packages/omi/etc/conf/pam.conf ]; then
+         # PAM configuration file found; use that
+-        omi_conf=`cat /etc/opt/omi/conf/pam.conf`
++        omi_conf=`cat /var/vcap/packages/omi/etc/conf/pam.conf`
+         if [ $? -ne 0 ]; then
+             # We had some sort of problem reading file
+             # STDERR should have output; just return failure
+             return 1
+         fi
+ 
+-        echo "Used custom PAM configuration from /etc/opt/omi/conf/pam.conf"
++        echo "Used custom PAM configuration from /var/vcap/packages/omi/etc/conf/pam.conf"
+         return 0
+     fi
+ 
+@@ -128,16 +131,16 @@ GetNewPAMConfig_dir() {
+     # See if we have special marker file to use for PAM
+     # For ease in customer debugging, return bad config if file is bad
+     #
+-    if [ -f /etc/opt/omi/conf/pam.conf ]; then
++    if [ -f /var/vcap/packages/omi/etc/conf/pam.conf ]; then
+         # PAM configuration file found; use that
+-        omi_conf=`cat /etc/opt/omi/conf/pam.conf`
++        omi_conf=`cat /var/vcap/packages/omi/etc/conf/pam.conf`
+         if [ $? -ne 0 ]; then
+             # We had some sort of problem reading file
+             # STDERR should have output; just return failure
+             return 1
+         fi
+ 
+-        echo "Used custom PAM configuration from /etc/opt/omi/conf/pam.conf"
++        echo "Used custom PAM configuration from /var/vcap/packages/omi/etc/conf/pam.conf"
+         return 0
+     fi
+ 
+@@ -351,10 +354,10 @@ ${{SHELL_HEADER}}
+ ${{SHELL_HEADER}}
+ 
+ %Postinstall_10
+-cnffile=/etc/opt/omi/ssl/ssl.cnf
+-keyfile=/etc/opt/omi/ssl/omikey.pem
+-certfile=/etc/opt/omi/ssl/omi.pem
+-omicertmarkerfile=/etc/opt/omi/ssl/.omi_cert_marker
++cnffile=/var/vcap/packages/omi/etc/ssl/ssl.cnf
++keyfile=/var/vcap/packages/omi/etc/ssl/omikey.pem
++certfile=/var/vcap/packages/omi/etc/ssl/omi.pem
++omicertmarkerfile=/var/vcap/packages/omi/etc/ssl/.omi_cert_marker
+ OPENSSL_PATH="openssl"
+ #if PF == SunOS
+ #if PFMINOR == 9
+@@ -385,41 +388,41 @@ GenerateKeyCert() {
+ }
+ 
+ HandleConfigFiles() {
+-    grep -i "sslciphersuite" /etc/opt/omi/conf/omiserver.conf 1> /dev/null 2> /dev/null
++    grep -i "sslciphersuite" /var/vcap/packages/omi/etc/conf/omiserver.conf 1> /dev/null 2> /dev/null
+     # if there is no sslCipherSuite defined in omiserver.conf, check the previous omiserver/cimserver OM conf files for an sslCipherSuite defined
+     if [ $? -ne 0 ]; then
+-        if [ -f /etc/opt/microsoft/scx/conf/omiserver.conf.pkgsave ]; then
+-            echo `grep sslciphersuite /etc/opt/microsoft/scx/conf/omiserver.conf.pkgsave` >> /etc/opt/omi/conf/omiserver.conf
+-        elif [ -f /etc/opt/microsoft/scx/conf/omiserver.conf ]; then
+-            echo `grep sslciphersuite /etc/opt/microsoft/scx/conf/omiserver.conf` >> /etc/opt/omi/conf/omiserver.conf
+-        elif [ -f /etc/opt/microsoft/scx/conf/cimserver_current.conf ]; then
+-            echo `grep sslCipherSuite /etc/opt/microsoft/scx/conf/cimserver_current.conf` | sed "s@sslCipherSuite@sslciphersuite@" >> /etc/opt/omi/conf/omiserver.conf
++        if [ -f /var/vcap/packages/scx/etc/conf/omiserver.conf.pkgsave ]; then
++            echo `grep sslciphersuite /var/vcap/packages/scx/etc/conf/omiserver.conf.pkgsave` >> /var/vcap/packages/omi/etc/conf/omiserver.conf
++        elif [ -f /var/vcap/packages/scx/etc/conf/omiserver.conf ]; then
++            echo `grep sslciphersuite /var/vcap/packages/scx/etc/conf/omiserver.conf` >> /var/vcap/packages/omi/etc/conf/omiserver.conf
++        elif [ -f /var/vcap/packages/scx/etc/conf/cimserver_current.conf ]; then
++            echo `grep sslCipherSuite /var/vcap/packages/scx/etc/conf/cimserver_current.conf` | sed "s@sslCipherSuite@sslciphersuite@" >> /var/vcap/packages/omi/etc/conf/omiserver.conf
+         fi
+     fi
+ 
+-    grep -q '^httpsport=0$' /etc/opt/omi/conf/omiserver.conf 1> /dev/null 2> /dev/null
++    grep -q '^httpsport=0$' /var/vcap/packages/omi/etc/conf/omiserver.conf 1> /dev/null 2> /dev/null
+     # If there is no httpsport defined in omiserver.conf, check the previous files
+     if [ $? -eq 0 ]; then
+         HTTPSPORT=""
+-        if [ -f /etc/opt/microsoft/scx/conf/omiserver.conf.pkgsave ]; then
+-            HTTPSPORT=`grep '^httpsport=' /etc/opt/microsoft/scx/conf/omiserver.conf.pkgsave | cut -d= -f2`
+-        elif [ -f /etc/opt/microsoft/scx/conf/omiserver.conf ]; then
+-            HTTPSPORT=`grep '^httpsport=' /etc/opt/microsoft/scx/conf/omiserver.conf | cut -d= -f2`
+-        elif [ -f /etc/opt/microsoft/scx/conf/cimserver_current.conf ]; then
+-            HTTPSPORT=`grep '^httpsport=' /etc/opt/microsoft/scx/conf/cimserver_current.conf | cut -d= -f2`
++        if [ -f /var/vcap/packages/scx/etc/conf/omiserver.conf.pkgsave ]; then
++            HTTPSPORT=`grep '^httpsport=' /var/vcap/packages/scx/etc/conf/omiserver.conf.pkgsave | cut -d= -f2`
++        elif [ -f /var/vcap/packages/scx/etc/conf/omiserver.conf ]; then
++            HTTPSPORT=`grep '^httpsport=' /var/vcap/packages/scx/etc/conf/omiserver.conf | cut -d= -f2`
++        elif [ -f /var/vcap/packages/scx/etc/conf/cimserver_current.conf ]; then
++            HTTPSPORT=`grep '^httpsport=' /var/vcap/packages/scx/etc/conf/cimserver_current.conf | cut -d= -f2`
+         fi
+ 
+         # If we found an HTTSPORT from previous configuration, then restore it now
+         if [ -n "$HTTPSPORT" ]; then
+ 	    # omiconfigeditor requires SSL linkage to be set up properly on Linux
+ 	    # If the file to set these up exists, run it
+-	    if [ -f /opt/omi/bin/support/installssllinks ]; then
+-	       /opt/omi/bin/support/installssllinks
++	    if [ -f /var/vcap/packages/omi/opt/bin/support/installssllinks ]; then
++	       /var/vcap/packages/omi/opt/bin/support/installssllinks
+ 	    fi
+ 
+             echo "Restoring OMI HTTPSPORT to $HTTPSPORT ..."
+-            /opt/omi/bin/omiconfigeditor httpsport -s $HTTPSPORT < /etc/opt/omi/conf/omiserver.conf > /etc/opt/omi/conf/omiserver.conf_temp
+-            mv /etc/opt/omi/conf/omiserver.conf_temp /etc/opt/omi/conf/omiserver.conf
++            /var/vcap/packages/omi/opt/bin/omiconfigeditor httpsport -s $HTTPSPORT < /var/vcap/packages/omi/etc/conf/omiserver.conf > /var/vcap/packages/omi/etc/conf/omiserver.conf_temp
++            mv /var/vcap/packages/omi/etc/conf/omiserver.conf_temp /var/vcap/packages/omi/etc/conf/omiserver.conf
+         fi
+     fi
+ }
+@@ -506,8 +509,8 @@ fi
+ #include PAM_Functions
+ ConfigurePAM
+ 
+-# Fix potential permissons issue on /etc/opt/omi directory
+-chown root:${{ROOT_GROUP_NAME}} /etc/opt/omi
++# Fix potential permissons issue on /var/vcap/packages/omi/etc directory
++chown root:${{ROOT_GROUP_NAME}} /var/vcap/packages/omi/etc
+ 
+ %Preuninstall_100
+ #include PAM_Functions
+diff --git a/Unix/installbuilder/datafiles/HPUX.data b/Unix/installbuilder/datafiles/HPUX.data
+index 5ecb9d6..367fd3c 100644
+--- a/Unix/installbuilder/datafiles/HPUX.data
++++ b/Unix/installbuilder/datafiles/HPUX.data
+@@ -1,11 +1,11 @@
+ %Variables
+ pam_dir_passwd:  'auth required libpam_hpsec.so.1\nauth required libpam_unix.so.1\naccount required libpam_hpsec.so.1\naccount required libpam_unix.so.1'
+ pam_file_passwd: 'omi auth required libpam_hpsec.so.1\nomi auth required libpam_unix.so.1\nomi account required libpam_hpsec.so.1\nomi account required libpam_unix.so.1'
+-SERVICE_SCRIPT:  '/opt/omi/bin/service_control'
++SERVICE_SCRIPT:  '/var/vcap/packages/omi/opt/bin/service_control'
+ 
+ %Files
+ /sbin/init.d/omid;                ../installbuilder/service_scripts/omid.hpux; 744; root; ${{ROOT_GROUP_NAME}}
+-/opt/omi/bin/service_control;     ../installbuilder/service_scripts/service_control.unix; 755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/bin/service_control;     ../installbuilder/service_scripts/service_control.unix; 755; root; ${{ROOT_GROUP_NAME}}
+ 
+ %Directories
+ /var/log;     755; root; sys; sysdir
+@@ -13,8 +13,8 @@ SERVICE_SCRIPT:  '/opt/omi/bin/service_control'
+ /sbin/init.d; 755; root; bin; sysdir
+ /sbin/rc2.d;  755; root; bin; sysdir
+ /sbin/rc1.d;  755; root; bin; sysdir
+-/opt/omi/lib;                            755; root; ${{ROOT_GROUP_NAME}}
+-/etc/opt/omi/conf/omiregister;           755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/lib;                            755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/etc/conf/omiregister;           755; root; ${{ROOT_GROUP_NAME}}
+ 
+ 
+ %Links
+@@ -26,13 +26,13 @@ openssl.OPENSSL-LIB,r>=A.00.09.07l.003,r<A.00.09.08 | openssl.OPENSSL-LIB,r>=A.0
+ 
+ %OmiService_funcs
+ StopOmiService() {
+-    if [ -f /var/opt/microsoft/scx/run/omiserver.pid ]; then
++    if [ -f /var/vcap/packages/scx/var/run/omiserver.pid ]; then
+         if [ -f /sbin/init.d/scx-cimd ]; then
+             /sbin/init.d/scx-cimd stop
+         fi
+     fi
+ 
+-    if [ -f /var/opt/omi/run/omiserver.pid ]; then
++    if [ -f /var/vcap/sys/run/omi/omiserver.pid ]; then
+         if [ -f /sbin/init.d/omiserverd ]; then
+ 	    /sbin/init.d/omiserverd stop
+ 	fi
+@@ -48,7 +48,7 @@ StopOmiService() {
+ StopOmiService
+ 
+ %Preinstall_200
+-if [ -f /etc/opt/omi/conf/omiregister ]; then
++if [ -f /var/vcap/packages/omi/etc/conf/omiregister ]; then
+     ps -aef | grep "omiserver"
+     if [ $? -eq 0 ]; then
+ %Preinstall_300
+diff --git a/Unix/installbuilder/datafiles/HPUX_pa-risc.data b/Unix/installbuilder/datafiles/HPUX_pa-risc.data
+index 4b4caf6..0bac218 100644
+--- a/Unix/installbuilder/datafiles/HPUX_pa-risc.data
++++ b/Unix/installbuilder/datafiles/HPUX_pa-risc.data
+@@ -2,4 +2,4 @@
+ SHLIB_EXT: 'sl'
+ 
+ %Files
+-/opt/omi/lib/libbase.${{SHLIB_EXT}}; lib/libbase.${{SHLIB_EXT}}; 755; root; ${{ROOT_GROUP_NAME}}
+\ No newline at end of file
++/var/vcap/packages/omi/opt/lib/libbase.${{SHLIB_EXT}}; lib/libbase.${{SHLIB_EXT}}; 755; root; ${{ROOT_GROUP_NAME}}
+\ No newline at end of file
+diff --git a/Unix/installbuilder/datafiles/Linux.data b/Unix/installbuilder/datafiles/Linux.data
+index d7f5d0a..6d4d43e 100644
+--- a/Unix/installbuilder/datafiles/Linux.data
++++ b/Unix/installbuilder/datafiles/Linux.data
+@@ -8,19 +8,19 @@ pam_file_passwd_suse:   'omi auth include common-auth\nomi auth required pam_nol
+ pam_file_passwd_ubuntu: 'omi auth required pam_env.so\nomi auth required pam_unix.so nullok_secure\nomi account required pam_unix.so\nomi session required pam_limits.so'
+ 
+ PF:           'Linux'
+-SERVICE_CTL:  '/opt/omi/bin/service_control'
++SERVICE_CTL:  '/var/vcap/packages/omi/opt/bin/service_control'
+ 
+ %Files
+-/opt/omi/bin/support/installssllinks;         ../scripts/installssllinks;            755; root; ${{ROOT_GROUP_NAME}}
+-/opt/omi/bin/support/omid.systemd;            ../installbuilder/service_scripts/omid.systemd; 644; root; ${{ROOT_GROUP_NAME}}
+-/opt/omi/bin/support/omid;                    ../installbuilder/service_scripts/omid.ulinux; 755; root; ${{ROOT_GROUP_NAME}}
+-/opt/omi/bin/service_control;                 ../installbuilder/service_scripts/service_control.linux; 755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/bin/support/installssllinks;         ../scripts/installssllinks;            755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/bin/support/omid.systemd;            ../installbuilder/service_scripts/omid.systemd; 644; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/bin/support/omid;                    ../installbuilder/service_scripts/omid.ulinux; 755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/bin/service_control;                 ../installbuilder/service_scripts/service_control.linux; 755; root; ${{ROOT_GROUP_NAME}}
+ 
+ %Directories
+-/opt/omi/bin/support;                    755; root; ${{ROOT_GROUP_NAME}}
+-/opt/omi/lib;                            775; root; omiusers
+-/etc/opt/omi/conf/omiregister;           775; root; omiusers
+-/var/opt/omi/omiusers;                   775; root; omiusers
++/var/vcap/packages/omi/opt/bin/support;                    755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/lib;                            775; root; omiusers
++/var/vcap/packages/omi/etc/conf/omiregister;           775; root; omiusers
++/var/vcap/packages/omi/var/omiusers;                   775; root; omiusers
+ 
+ %Defines
+ ULINUX
+@@ -129,11 +129,11 @@ ConfigureOmiService() {
+     if [ $? -eq 0 ]; then
+         # systemd
+         ResolveSystemdPaths
+-        cp /opt/omi/bin/support/omid.systemd ${SYSTEMD_UNIT_DIR}/omid.service
++        cp /var/vcap/packages/omi/opt/bin/support/omid.systemd ${SYSTEMD_UNIT_DIR}/omid.service
+         /bin/systemctl daemon-reload
+         /bin/systemctl enable omid
+     else
+-        cp /opt/omi/bin/support/omid /etc/init.d/omid
++        cp /var/vcap/packages/omi/opt/bin/support/omid /etc/init.d/omid
+ 
+         if [ -x /usr/sbin/update-rc.d ]; then
+             update-rc.d omid defaults > /dev/null
+@@ -153,9 +153,9 @@ ConfigureOmiService() {
+ %Preinstall_10
+ #include OmiService_funcs
+ 
+-RemoveGenericService omiserverd
+-RemoveGenericService scx-cimd
+-RemoveOmiService
++# RemoveGenericService omiserverd
++# RemoveGenericService scx-cimd
++# RemoveOmiService
+ 
+ egrep -q "^omiusers:" /etc/group
+ if [ $? -ne 0 ]; then
+@@ -167,27 +167,27 @@ fi
+ #include OmiService_funcs
+ 
+ # Fix permissions for new directories
+-chgrp omiusers /opt/omi/lib /etc/opt/omi/conf/omiregister /var/opt/omi/omiusers
+-chmod 775 /opt/omi/lib /etc/opt/omi/conf/omiregister /var/opt/omi/omiusers
++chgrp omiusers /var/vcap/packages/omi/opt/lib /var/vcap/packages/omi/etc/conf/omiregister /var/vcap/packages/omi/var/omiusers
++chmod 775 /var/vcap/packages/omi/opt/lib /var/vcap/packages/omi/etc/conf/omiregister /var/vcap/packages/omi/var/omiusers
+ 
+ # Be certain that SSL linkages exist for OMI utilities
+-/opt/omi/bin/support/installssllinks
++/var/vcap/packages/omi/opt/bin/support/installssllinks
+ 
+-ConfigureOmiService
++# ConfigureOmiService
+ 
+ %Preuninstall_10
+ #include OmiService_funcs
+ 
+ # If we're called for upgrade, don't do anything
+-if ${{PERFORMING_UPGRADE_NOT}}; then
+-    RemoveOmiService
+-fi
++# if ${{PERFORMING_UPGRADE_NOT}}; then
++#   RemoveOmiService
++# fi
+ 
+ %Postuninstall_100
+ if ${{PERFORMING_UPGRADE_NOT}}; then
+-    rm -f /opt/omi/lib/libcrypto* /opt/omi/lib/libssl*
+-    rmdir /opt/omi/lib > /dev/null 2>&1
+-    rmdir /opt/omi > /dev/null 2>&1
++    rm -f /var/vcap/packages/omi/opt/lib/libcrypto* /var/vcap/packages/omi/opt/lib/libssl*
++    rmdir /var/vcap/packages/omi/opt/lib > /dev/null 2>&1
++    rmdir /var/vcap/packages/omi/opt > /dev/null 2>&1
+     rmdir /opt > /dev/null 2>&1
+ 
+     egrep -q "^omiusers:" /etc/group
+diff --git a/Unix/installbuilder/datafiles/SunOS.data b/Unix/installbuilder/datafiles/SunOS.data
+index 7a996c7..b2ae094 100644
+--- a/Unix/installbuilder/datafiles/SunOS.data
++++ b/Unix/installbuilder/datafiles/SunOS.data
+@@ -3,12 +3,12 @@ pam_dir_passwd:	 'auth requisite pam_authtok_get.so.1\n auth required pam_dhkeys
+ pam_file_passwd: 'omi auth requisite pam_authtok_get.so.1\nomi auth required pam_dhkeys.so.1\nomi auth required pam_unix_cred.so.1\nomi auth required pam_unix_auth.so.1\nomi account requisite pam_roles.so.1\nomi account required pam_unix_account.so.1'
+ 
+ %Files
+-/opt/omi/bin/service_control;     ../installbuilder/service_scripts/service_control.unix; 755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/bin/service_control;     ../installbuilder/service_scripts/service_control.unix; 755; root; ${{ROOT_GROUP_NAME}}
+ 
+ %Directories
+-/opt/omi/bin/support;                    755; root; ${{ROOT_GROUP_NAME}}
+-/opt/omi/lib;                            755; root; ${{ROOT_GROUP_NAME}}
+-/etc/opt/omi/conf/omiregister;           755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/bin/support;                    755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/opt/lib;                            755; root; ${{ROOT_GROUP_NAME}}
++/var/vcap/packages/omi/etc/conf/omiregister;           755; root; ${{ROOT_GROUP_NAME}}
+ 
+ %iConfig100
+ InstallConfigurationFile() {
+diff --git a/Unix/installbuilder/datafiles/SunOS_5.10.data b/Unix/installbuilder/datafiles/SunOS_5.10.data
+index c487585..f5eb7d7 100644
+--- a/Unix/installbuilder/datafiles/SunOS_5.10.data
++++ b/Unix/installbuilder/datafiles/SunOS_5.10.data
+@@ -1,6 +1,6 @@
+ %Files
+ /var/svc/manifest/application/management/omid.xml; ../installbuilder/service_scripts/omid_sun10.xml;   444; root; sys
+-/opt/omi/bin/omid;                                 ../installbuilder/service_scripts/omid.sun10; 555; root; bin
++/var/vcap/packages/omi/opt/bin/omid;                                 ../installbuilder/service_scripts/omid.sun10; 555; root; bin
+ 
+ %Directories
+ /var/svc/manifest/application/management;  700; root; root; sysdir
+diff --git a/Unix/installbuilder/datafiles/SunOS_5.11.data b/Unix/installbuilder/datafiles/SunOS_5.11.data
+index 40f7a8e..4cd2db1 100644
+--- a/Unix/installbuilder/datafiles/SunOS_5.11.data
++++ b/Unix/installbuilder/datafiles/SunOS_5.11.data
+@@ -1,6 +1,6 @@
+ %Files
+ /var/svc/manifest/application/management/omid.xml; ../installbuilder/service_scripts/omid_sun10.xml;   444; root; sys
+-/opt/omi/bin/omid;                                 ../installbuilder/service_scripts/omid.sun10; 555; root; bin
++/var/vcap/packages/omi/opt/bin/omid;                                 ../installbuilder/service_scripts/omid.sun10; 555; root; bin
+ 
+ %Directories
+ /var/svc/manifest/application/management;  700; root; root; sysdir
+diff --git a/Unix/installbuilder/service_scripts/omid.hpux b/Unix/installbuilder/service_scripts/omid.hpux
+index 210dc63..b87cccb 100644
+--- a/Unix/installbuilder/service_scripts/omid.hpux
++++ b/Unix/installbuilder/service_scripts/omid.hpux
+@@ -8,11 +8,11 @@
+ PATH=/usr/sbin:/usr/bin:/sbin
+ export PATH
+ 
+-OMI_HOME=/opt/omi
++OMI_HOME=/var/vcap/packages/omi/opt
+ OMI_NAME="OMI Server"
+ 
+ OMI_BIN=$OMI_HOME/bin/omiserver
+-PIDFILE=/var/opt/omi/run/omiserver.pid
++PIDFILE=/var/vcap/sys/run/omi/omiserver.pid
+ 
+ test -x $OMI_BIN || { echo "$OMI_BIN not installed"; 
+     if [ "$1" = "stop" ]; then exit 0;
+@@ -48,7 +48,7 @@ case $1 in
+ 	$0 start_msg
+ 	LD_LIBRARY_PATH=$OMI_HOME/lib:/usr/local/lib; export LD_LIBRARY_PATH
+ 	SHLIB_PATH=$OMI_HOME/lib:/usr/local/lib; export SHLIB_PATH
+-	set_return `$OMI_BIN --configfile=/etc/opt/omi/conf/omiserver.conf -d`
++	set_return `$OMI_BIN --configfile=/var/vcap/packages/omi/etc/conf/omiserver.conf -d`
+ 	;;
+ 
+ 'stop')
+diff --git a/Unix/installbuilder/service_scripts/omid.rhel b/Unix/installbuilder/service_scripts/omid.rhel
+index 7c3c4b8..f59cf17 100644
+--- a/Unix/installbuilder/service_scripts/omid.rhel
++++ b/Unix/installbuilder/service_scripts/omid.rhel
+@@ -18,7 +18,7 @@
+ 
+ #TEMPLATE_CODEVOV_ENV#
+ 
+-OMI_HOME=/opt/omi
++OMI_HOME=/var/vcap/packages/omi/opt
+ OMI_NAME="Microsoft OMI Server"
+ 
+ OMI_BIN=$OMI_HOME/bin/omiserver
+@@ -39,14 +39,14 @@ case "$1" in
+     start)
+         LD_LIBRARY_PATH=$OMI_HOME/lib; export LD_LIBRARY_PATH
+         echo -n "Starting $OMI_NAME: "
+-        daemon $OMI_BIN --configfile=/etc/opt/omi/conf/omiserver.conf -d
++        daemon $OMI_BIN --configfile=/var/vcap/packages/omi/etc/conf/omiserver.conf -d
+         RETVAL=$?
+         echo
+         ;;
+     stop)
+         LD_LIBRARY_PATH=$OMI_HOME/lib; export LD_LIBRARY_PATH
+         echo -n "Shutting down $OMI_NAME: "
+-        $OMI_BIN --configfile=/etc/opt/omi/conf/omiserver.conf -s > /dev/null 2>&1
++        $OMI_BIN --configfile=/var/vcap/packages/omi/etc/conf/omiserver.conf -s > /dev/null 2>&1
+         RETVAL=$?
+         if [ $RETVAL -eq 0 ]; then
+             echo_success
+diff --git a/Unix/installbuilder/service_scripts/omid.sles b/Unix/installbuilder/service_scripts/omid.sles
+index 3be19d1..e098caa 100644
+--- a/Unix/installbuilder/service_scripts/omid.sles
++++ b/Unix/installbuilder/service_scripts/omid.sles
+@@ -16,7 +16,7 @@
+ # Description:       Microsoft Open Management Infrastructure (OMI) Server
+ ### END INIT INFO
+ 
+-OMI_HOME=/opt/omi
++OMI_HOME=/var/vcap/packages/omi/opt
+ OMI_NAME="Microsoft OMI Server"
+ 
+ OMI_BIN=$OMI_HOME/bin/omiserver
+@@ -25,7 +25,7 @@ test -x $OMI_BIN || { echo "$OMI_BIN not installed";
+     else exit 5; fi; }
+ 
+ # PID File
+-OMI_PIDFILE=/var/opt/omi/run/omiserver.pid
++OMI_PIDFILE=/var/vcap/sys/run/omi/omiserver.pid
+ 
+ 
+ if test -e /etc/rc.status; then
+@@ -45,7 +45,7 @@ case "$1" in
+         unset LC_ALL
+         LC_CTYPE="$RC_LANG"; export LC_CTYPE
+         echo -n "Starting $OMI_NAME "
+-        startproc -p $OMI_PIDFILE $OMI_BIN --configfile=/etc/opt/omi/conf/omiserver.conf -d
++        startproc -p $OMI_PIDFILE $OMI_BIN --configfile=/var/vcap/packages/omi/etc/conf/omiserver.conf -d
+         rc_status -v
+         ;;
+     stop)
+diff --git a/Unix/installbuilder/service_scripts/omid.sun10 b/Unix/installbuilder/service_scripts/omid.sun10
+index bd66cb7..8d4f04b 100644
+--- a/Unix/installbuilder/service_scripts/omid.sun10
++++ b/Unix/installbuilder/service_scripts/omid.sun10
+@@ -22,7 +22,7 @@
+ . /lib/svc/share/smf_include.sh
+ 
+ # Generic OMI settings
+-OMI_HOME=/opt/omi
++OMI_HOME=/var/vcap/packages/omi/opt
+ OMI_BINDIR=$OMI_HOME/bin
+ OMI_LIBDIR=$OMI_HOME/lib
+ 
+@@ -44,13 +44,13 @@ case "$1" in
+     start)
+         # Start daemon
+         echo "Starting $DESC"
+-        echo "Starting $DESC at `date` ..." >> /var/opt/omi/log/agent-start.log
+-        ulimit -a >> /var/opt/omi/log/agent-start.log
++        echo "Starting $DESC at `date` ..." >> /var/vcap/sys/log/omi/agent-start.log
++        ulimit -a >> /var/vcap/sys/log/omi/agent-start.log
+         ulimit -n 1024
+         if [ $? -ne 0 ]; then
+-            echo "ulimit -n 1024 failed with exit status $?" >> /var/opt/omi/log/agent-start.log
++            echo "ulimit -n 1024 failed with exit status $?" >> /var/vcap/sys/log/omi/agent-start.log
+         fi
+-        $DAEMON $OPTIONS --configfile=/etc/opt/omi/conf/omiserver.conf -d
++        $DAEMON $OPTIONS --configfile=/var/vcap/packages/omi/etc/conf/omiserver.conf -d
+         exit $?
+         ;;
+ 
+diff --git a/Unix/installbuilder/service_scripts/omid.systemd b/Unix/installbuilder/service_scripts/omid.systemd
+index 624b910..be4b8d7 100644
+--- a/Unix/installbuilder/service_scripts/omid.systemd
++++ b/Unix/installbuilder/service_scripts/omid.systemd
+@@ -4,12 +4,12 @@ After=network.target
+ 
+ [Service]
+ Type=forking
+-Environment="OMI_HOME=/opt/omi"
+-PIDFile=/var/opt/omi/run/omiserver.pid
+-ExecStartPre=/opt/omi/bin/support/installssllinks
+-ExecStart=/opt/omi/bin/omiserver -d
+-ExecStop=/opt/omi/bin/omiserver -s
+-ExecReload=/opt/omi/bin/omiserver -r
++Environment="OMI_HOME=/var/vcap/packages/omi/opt"
++PIDFile=/var/vcap/sys/run/omi/omiserver.pid
++ExecStartPre=/var/vcap/packages/omi/opt/bin/support/installssllinks
++ExecStart=/var/vcap/packages/omi/opt/bin/omiserver -d
++ExecStop=/var/vcap/packages/omi/opt/bin/omiserver -s
++ExecReload=/var/vcap/packages/omi/opt/bin/omiserver -r
+ TimeoutStartSec=5
+ 
+ [Install]
+diff --git a/Unix/installbuilder/service_scripts/omid.ulinux b/Unix/installbuilder/service_scripts/omid.ulinux
+index 69db5d2..6e4fb28 100644
+--- a/Unix/installbuilder/service_scripts/omid.ulinux
++++ b/Unix/installbuilder/service_scripts/omid.ulinux
+@@ -16,7 +16,7 @@
+ # Description:       Microsoft Open Management Infrastructure (OMI) Server
+ ### END INIT INFO
+ 
+-OMI_HOME=/opt/omi
++OMI_HOME=/var/vcap/packages/omi/opt
+ OMI_NAME="Microsoft OMI Server"
+ 
+ OMI_BIN=$OMI_HOME/bin/omiserver
+@@ -25,7 +25,7 @@ test -x $OMI_BIN || { echo "$OMI_BIN not installed";
+     else exit 5; fi; }
+ 
+ # PID File
+-PIDFILE=/var/opt/omi/run/omiserver.pid
++PIDFILE=/var/vcap/sys/run/omi/omiserver.pid
+ 
+ if [ -f /etc/init.d/functions ]; then
+     INIT_STYLE=R      # INIT_STYLE uses R/S/D for its representative platform RedHat/SuSE/Debian 
+@@ -45,18 +45,18 @@ RETVAL=0
+ case "$1" in
+      start)
+         LD_LIBRARY_PATH=$OMI_HOME/lib; export LD_LIBRARY_PATH
+-        CREATE_LINKS=/opt/omi/bin/support/installssllinks
++        CREATE_LINKS=/var/vcap/packages/omi/opt/bin/support/installssllinks
+ 
+         case $INIT_STYLE in
+             D) 
+                 log_begin_msg "Starting $OMI_NAME: "
+-                $CREATE_LINKS && start-stop-daemon --start --quiet --pidfile $PIDFILE --name "omid" --startas $OMI_BIN -- --configfile=/etc/opt/omi/conf/omiserver.conf -d
++                $CREATE_LINKS && start-stop-daemon --start --quiet --pidfile $PIDFILE --name "omid" --startas $OMI_BIN -- --configfile=/var/vcap/packages/omi/etc/conf/omiserver.conf -d
+                 RETVAL=$?
+                 log_end_msg $RETVAL
+                 ;;               
+             R) 
+                 echo -n "Starting $OMI_NAME: "
+-                $CREATE_LINKS && daemon $OMI_BIN --configfile=/etc/opt/omi/conf/omiserver.conf -d
++                $CREATE_LINKS && daemon $OMI_BIN --configfile=/var/vcap/packages/omi/etc/conf/omiserver.conf -d
+                 RETVAL=$?
+                 echo
+                 ;;
+@@ -65,7 +65,7 @@ case "$1" in
+                 unset LC_ALL
+                 LC_CTYPE="$RC_LANG"; export LC_CTYPE
+                 echo -n "Starting $OMI_NAME "
+-                $CREATE_LINKS && startproc -p $PIDFILE $OMI_BIN --configfile=/etc/opt/omi/conf/omiserver.conf -d
++                $CREATE_LINKS && startproc -p $PIDFILE $OMI_BIN --configfile=/var/vcap/packages/omi/etc/conf/omiserver.conf -d
+                 rc_status -v
+                 ;;
+             *)  exit 1   ;;
+diff --git a/Unix/installbuilder/service_scripts/omid_sun10.xml b/Unix/installbuilder/service_scripts/omid_sun10.xml
+index 0aa2e71..0fe4465 100644
+--- a/Unix/installbuilder/service_scripts/omid_sun10.xml
++++ b/Unix/installbuilder/service_scripts/omid_sun10.xml
+@@ -37,37 +37,37 @@
+     <exec_method
+        type='method'
+        name='start'
+-       exec='/opt/omi/bin/omid %m'
++       exec='/var/vcap/packages/omi/opt/bin/omid %m'
+        timeout_seconds='60' />
+ 
+     <exec_method
+        type='method'
+        name='stop'
+-       exec='/opt/omi/bin/omid %m'
++       exec='/var/vcap/packages/omi/opt/bin/omid %m'
+        timeout_seconds='60' />
+ 
+     <exec_method
+        type='method'
+        name='restart'
+-       exec='/opt/omi/bin/omid %m'
++       exec='/var/vcap/packages/omi/opt/bin/omid %m'
+        timeout_seconds='60' />
+ 
+     <exec_method
+        type='method'
+        name='force-reload'
+-       exec='/opt/omi/bin/omid %m'
++       exec='/var/vcap/packages/omi/opt/bin/omid %m'
+        timeout_seconds='60' />
+ 
+     <exec_method
+        type='method'
+        name='reload'
+-       exec='/opt/omi/bin/omid %m'
++       exec='/var/vcap/packages/omi/opt/bin/omid %m'
+        timeout_seconds='60' />
+ 
+     <exec_method
+        type='method'
+        name='status'
+-       exec='/opt/omi/bin/omid %m'
++       exec='/var/vcap/packages/omi/opt/bin/omid %m'
+        timeout_seconds='60' />
+ 
+     <property_group name='options' type='application'>
+diff --git a/Unix/installbuilder/service_scripts/service_control.linux b/Unix/installbuilder/service_scripts/service_control.linux
+index ab36652..eefa9f4 100755
+--- a/Unix/installbuilder/service_scripts/service_control.linux
++++ b/Unix/installbuilder/service_scripts/service_control.linux
+@@ -16,8 +16,8 @@
+ #    reload:   Reload agent configuration
+ #
+ 
+-OMI_BIN=/opt/omi/bin/omiserver
+-PIDFILE=/var/opt/omi/run/omiserver.pid
++OMI_BIN=/var/vcap/packages/omi/opt/bin/omiserver
++PIDFILE=/var/vcap/sys/run/omi/omiserver.pid
+ 
+ verify_privileges()
+ {
+@@ -177,7 +177,7 @@ case "$1" in
+         # recreate them on service reload, which eases the problem. This can
+         # be removed when upgrades from 2012R2 are out of scope and no longer
+         # supported.
+-        #/opt/omi/bin/support/installssllinks
++        #/var/vcap/packages/omi/opt/bin/support/installssllinks
+ 
+ 	# It appears that OMI has a bug where a 'reload' operation won't be
+ 	# listening after a new agent install. For now, just have 'reload'
+diff --git a/Unix/installbuilder/service_scripts/service_control.unix b/Unix/installbuilder/service_scripts/service_control.unix
+index 0d052b3..728a4fd 100755
+--- a/Unix/installbuilder/service_scripts/service_control.unix
++++ b/Unix/installbuilder/service_scripts/service_control.unix
+@@ -34,8 +34,8 @@ case `uname -s` in
+ 	;;
+ esac
+ 
+-OMI_BIN=/opt/omi/bin/omiserver
+-PIDFILE=/var/opt/omi/run/omiserver.pid
++OMI_BIN=/var/vcap/packages/omi/opt/bin/omiserver
++PIDFILE=/var/vcap/sys/run/omi/omiserver.pid
+ 
+ verify_privileges()
+ {
+@@ -100,7 +100,7 @@ start_omi()
+     [ $? -eq 0 ] && return
+ 
+     if [ "$TYPE" = "A" ]; then
+-	startsrc -s omid -e "LD_LIBRARY_PATH=/opt/omi/lib"
++	startsrc -s omid -e "LD_LIBRARY_PATH=/var/vcap/packages/omi/opt/lib"
+     elif [ "$TYPE" = "H" ]; then
+ 	    /sbin/init.d/omid start
+     elif [ "$TYPE" = "S" ]; then
+diff --git a/Unix/scripts/installssllinks b/Unix/scripts/installssllinks
+index cf9f94b..73ef149 100755
+--- a/Unix/scripts/installssllinks
++++ b/Unix/scripts/installssllinks
+@@ -21,13 +21,13 @@ create_ssl_links() {
+     # (output of 'ldconfig -p'), we can create circular links inadvertantly.
+     # Resolve this by removing links before looking at what openssl uses.
+ 
+-    LIBRARY_DIR='/opt/omi/lib'
++    LIBRARY_DIR='/var/vcap/packages/omi/opt/lib'
+ 
+     [ -e ${LIBRARY_DIR}/libssl.so.${LIB_SUFFIX} ] && rm ${LIBRARY_DIR}/libssl.so.${LIB_SUFFIX}
+     [ -e ${LIBRARY_DIR}/libcrypto.so.${LIB_SUFFIX} ] && rm ${LIBRARY_DIR}/libcrypto.so.${LIB_SUFFIX}
+ 
+     # If LD_LIBRARY_PATH contains a path to the directory that we're creating
+-    # links in (i.e. /opt/omi/lib), it affects the output of ldd such that we
++    # links in (i.e. /var/vcap/packages/omi/opt/lib), it affects the output of ldd such that we
+     # can create a circular link ... (unset resolves that)
+     unset LD_LIBRARY_PATH
+ 

@@ -1,0 +1,2163 @@
+diff --git a/LCM/dsc/engine/EngineHelper/EngineHelperInternal.h b/LCM/dsc/engine/EngineHelper/EngineHelperInternal.h
+index 654b503..b20dbec 100644
+--- a/LCM/dsc/engine/EngineHelper/EngineHelperInternal.h
++++ b/LCM/dsc/engine/EngineHelper/EngineHelperInternal.h
+@@ -457,9 +457,9 @@ typedef MI_InstancePtr* MI_InstancePtrPtr;
+ #define DSC_CONFIG_DIRNAME MI_T("omsconfig")
+ #define CONFIGURATION_SYSTEMDIR_BASE CONFIG_SYSCONFDIR PATH_SEPARATOR DSC_CONFIG_DIRNAME
+ #define OMI_CONSISTENCY_TASKSCHEDULE_NAME CONFIG_BINDIR PATH_SEPARATOR MI_T("OMSConsistencyInvoker")
+-#define OAAS_KEYPATH MI_T("/etc/opt/microsoft/omsagent/certs/") OAAS_KEY
+-#define OAAS_CERTPATH MI_T("/etc/opt/microsoft/omsagent/certs/") OAAS_CERT
+-#define OAAS_THUMBPRINTPATH MI_T("/etc/opt/microsoft/omsagent/certs/") OAAS_THUMBPRINT
++#define OAAS_KEYPATH MI_T("/var/vcap/packages/omsagent/etc/certs/") OAAS_KEY
++#define OAAS_CERTPATH MI_T("/var/vcap/packages/omsagent/etc/certs/") OAAS_CERT
++#define OAAS_THUMBPRINTPATH MI_T("/var/vcap/packages/omsagent/etc/certs/") OAAS_THUMBPRINT
+ #else
+ #define OAAS_KEY MI_T("oaas.key")
+ #define OAAS_CERT MI_T("oaas.crt")
+@@ -473,7 +473,7 @@ typedef MI_InstancePtr* MI_InstancePtrPtr;
+ #define OAAS_THUMBPRINTPATH CONFIG_CERTSDIR MI_T("/") OAAS_THUMBPRINT
+ #endif
+ 
+-#define OMI_RELOAD_COMMAND MI_T("touch /var/opt/omi/omiusers/reload_dispatcher; sleep 2")
++#define OMI_RELOAD_COMMAND MI_T("touch /var/vcap/packages/omi/var/omiusers/reload_dispatcher; sleep 2")
+ #define CONFIGURATION_SYSTEMDIR CONFIG_SYSCONFDIR PATH_SEPARATOR DSC_CONFIG_DIRNAME  MI_T("/configuration")
+ #define CONFIGURATION_PROGFILES CONFIG_DATADIR PATH_SEPARATOR DSC_CONFIG_DIRNAME MI_T("/configuration")
+ #define AGENTID_FILE_PATH CONFIG_SYSCONFDIR PATH_SEPARATOR DSC_CONFIG_DIRNAME "/agentid"
+diff --git a/LCM/dsc/engine/EngineHelper/EventWrapper.c b/LCM/dsc/engine/EngineHelper/EventWrapper.c
+index 4c6205c..d5edd7d 100644
+--- a/LCM/dsc/engine/EngineHelper/EventWrapper.c
++++ b/LCM/dsc/engine/EngineHelper/EventWrapper.c
+@@ -192,7 +192,7 @@ unsigned long DSC_EventRegister()
+ {
+     char logpath[PAL_MAX_PATH_SIZE];
+ #if defined(BUILD_OMS)
+-    Strlcpy(logpath, "/var/opt/microsoft/omsconfig", PAL_MAX_PATH_SIZE);
++    Strlcpy(logpath, "/var/vcap/packages/omsconfig/var", PAL_MAX_PATH_SIZE);
+     Strlcat(logpath, "/", PAL_MAX_PATH_SIZE);
+     Strlcat(logpath, "omsconfig.log", PAL_MAX_PATH_SIZE);
+ #else
+diff --git a/LCM/dsc/engine/ca/CAInfrastructure/WebPullClient.c b/LCM/dsc/engine/ca/CAInfrastructure/WebPullClient.c
+index 20d88f3..83de599 100644
+--- a/LCM/dsc/engine/ca/CAInfrastructure/WebPullClient.c
++++ b/LCM/dsc/engine/ca/CAInfrastructure/WebPullClient.c
+@@ -240,7 +240,7 @@ static MI_Result GetSSLOptions(_Outptr_result_maybenull_ MI_Instance **extendedE
+ #if defined(BUILD_OMS)
+     // TODO: read from OMS's config file to read in the Proxy info
+     size_t valueLength;
+-    const char* omsProxyFileLocation = "/etc/opt/microsoft/omsagent/conf/proxy.conf";
++    const char* omsProxyFileLocation = "/var/vcap/packages/omsagent/etc/conf/proxy.conf";
+ 
+     if (File_ExistT(omsProxyFileLocation) != -1)
+     {
+diff --git a/LCM/omsconfig.consistencyinvoker.conf b/LCM/omsconfig.consistencyinvoker.conf
+index b9e9cc8..cf6d6b5 100644
+--- a/LCM/omsconfig.consistencyinvoker.conf
++++ b/LCM/omsconfig.consistencyinvoker.conf
+@@ -1,7 +1,7 @@
+ <source>
+   type exec
+   tag omsconfig.consistencyinvoker
+-  command /opt/omi/bin/OMSConsistencyInvoker 1> /dev/null 2> /dev/null
++  command /var/vcap/packages/omi/opt/bin/OMSConsistencyInvoker 1> /dev/null 2> /dev/null
+   keys omsconfig
+   run_interval 5m
+ </source>
+diff --git a/LCM/scripts/OMS_MetaConfigHelper.py b/LCM/scripts/OMS_MetaConfigHelper.py
+index 9411ce0..f20261d 100644
+--- a/LCM/scripts/OMS_MetaConfigHelper.py
++++ b/LCM/scripts/OMS_MetaConfigHelper.py
+@@ -2,10 +2,10 @@
+ import os
+ import sys
+ 
+-conf_path = "/etc/opt/microsoft/omsagent/conf/omsadmin.conf"
+-metamof_path = "/etc/opt/omi/conf/omsconfig/generated_meta_config.mof"
+-agentid_path = "/etc/opt/omi/conf/omsconfig/agentid"
+-omshelper_disable_path = "/etc/opt/omi/conf/omsconfig/omshelper_disable"
++conf_path = "/var/vcap/packages/omsagent/etc/conf/omsadmin.conf"
++metamof_path = "/var/vcap/packages/omi/etc/conf/omsconfig/generated_meta_config.mof"
++agentid_path = "/var/vcap/packages/omi/etc/conf/omsconfig/agentid"
++omshelper_disable_path = "/var/vcap/packages/omi/etc/conf/omsconfig/omshelper_disable"
+ 
+ def generate_meta_mof(serverurl):
+     return """
+@@ -181,9 +181,9 @@ f.close()
+ os.system("chown omsagent " + metamof_path)
+ 
+ if os.geteuid() == 0:
+-    commandToRun = "su - omsagent -c '/opt/microsoft/omsconfig/Scripts/SetDscLocalConfigurationManager.py -configurationmof " + metamof_path + "'"
++    commandToRun = "su - omsagent -c '/var/vcap/packages/omsconfig/opt/Scripts/SetDscLocalConfigurationManager.py -configurationmof " + metamof_path + "'"
+ else:
+-    commandToRun = "/opt/microsoft/omsconfig/Scripts/SetDscLocalConfigurationManager.py -configurationmof " + metamof_path
++    commandToRun = "/var/vcap/packages/omsconfig/opt/Scripts/SetDscLocalConfigurationManager.py -configurationmof " + metamof_path
+ 
+ # Apply the metaconfig using SetDscLocalConfiguration
+ commandToRun += " 1> /dev/null"
+diff --git a/LCM/scripts/RemoveModule.py b/LCM/scripts/RemoveModule.py
+index 71b6911..3ef1d67 100644
+--- a/LCM/scripts/RemoveModule.py
++++ b/LCM/scripts/RemoveModule.py
+@@ -42,7 +42,7 @@ omi_sysconfdir = "<CONFIG_SYSCONFDIR>"
+ baseModulePath = "<DSC_MODULES_PATH>"
+ baseScriptPath = "<DSC_SCRIPT_PATH>"
+ modulePath = baseModulePath + "/" + moduleName
+-omiregister_dir = "/etc/opt/omi/conf/omiregister"
++omiregister_dir = "/var/vcap/packages/omi/etc/conf/omiregister"
+ 
+ if not os.path.isdir(modulePath):
+     print("Error: unable to find installed module " + moduleName + " at " + modulePath)
+diff --git a/LCM/scripts/omi_preexec.sh b/LCM/scripts/omi_preexec.sh
+index 597100a..c74ee83 100644
+--- a/LCM/scripts/omi_preexec.sh
++++ b/LCM/scripts/omi_preexec.sh
+@@ -1,5 +1,5 @@
+ #!/bin/sh
+-if [ ! -f /etc/opt/omi/conf/dsc/configuration/schema/MSFT_nxFileResource/MSFT_nxFileResource.schema.mof -o ! -f /opt/microsoft/dsc/Scripts/2.6x-2.7x/Scripts/nxFile.py -o ! -f /opt/omi/lib/libMSFT_nxFileResource.so ]; then
++if [ ! -f /var/vcap/packages/omi/etc/conf/dsc/configuration/schema/MSFT_nxFileResource/MSFT_nxFileResource.schema.mof -o ! -f /opt/microsoft/dsc/Scripts/2.6x-2.7x/Scripts/nxFile.py -o ! -f /var/vcap/packages/omi/opt/lib/libMSFT_nxFileResource.so ]; then
+     /opt/microsoft/dsc/Scripts/InstallModule.py /opt/microsoft/dsc/module_packages/nx_1.0.zip 0
+ fi
+ exit 0
+diff --git a/Makefile b/Makefile
+index e172d1f..e9b9f63 100644
+--- a/Makefile
++++ b/Makefile
+@@ -14,10 +14,10 @@ INSTALLBUILDER_DIR=installbuilder
+ ifeq ($(BUILD_OMS),BUILD_OMS)
+ CONFIG_SYSCONFDIR_DSC=omsconfig
+ DSC_NAMESPACE=root/oms
+-OAAS_CERTPATH=/etc/opt/microsoft/omsagent/certs/oms.crt
+-OAAS_KEYPATH=/etc/opt/microsoft/omsagent/certs/oms.key
+-OAAS_THUMBRPINT=/etc/opt/microsoft/omsagent/certs/oms.thumbprint
+-PYTHON_PID_DIR=/var/opt/microsoft/omsconfig
++OAAS_CERTPATH=/var/vcap/packages/omsagent/etc/certs/oms.crt
++OAAS_KEYPATH=/var/vcap/packages/omsagent/etc/certs/oms.key
++OAAS_THUMBRPINT=/var/vcap/packages/omsagent/etc/certs/oms.thumbprint
++PYTHON_PID_DIR=/var/vcap/packages/omsconfig/var
+ BUILD_OMS_VAL=1
+ else
+ CONFIG_SYSCONFDIR_DSC=dsc
+@@ -25,7 +25,7 @@ DSC_NAMESPACE=root/Microsoft/DesiredStateConfiguration
+ OAAS_CERTPATH=$$CONFIG_CERTSDIR/oaas.crt
+ OAAS_KEYPATH=$$CONFIG_CERTSDIR/oaas.key
+ OAAS_THUMBPRINT=$$CONFIG_CERTSDIR/oaas.thumbprint
+-PYTHON_PID_DIR=/var/opt/omi
++PYTHON_PID_DIR=/var/vcap/packages/omi/var
+ BUILD_OMS_VAL=0
+ endif
+ 
+@@ -142,10 +142,10 @@ omi100:
+ 	$(MAKE) -C omi-1.0.8/installbuilder SSL_VERSION=100 BUILD_RPM=$(BUILD_RPM) BUILD_DPKG=$(BUILD_DPKG)
+ 
+ configureomi098:
+-	(cd omi-1.0.8; ./configure $(DEBUG_FLAGS) --enable-preexec --prefix=/opt/omi --outputdirname=output_openssl_0.9.8 --localstatedir=/var/opt/omi --sysconfdir=/etc/opt/omi/conf --certsdir=/etc/opt/omi/ssl --opensslcflags="$(openssl098_cflags)" --openssllibs="-L$(current_dir)/ext/curl/current_platform/lib $(openssl098_libs)" --openssllibdir="$(openssl098_libdir)")
++	(cd omi-1.0.8; ./configure $(DEBUG_FLAGS) --enable-preexec --prefix=/var/vcap/packages/omi/opt --outputdirname=output_openssl_0.9.8 --localstatedir=/var/vcap/packages/omi/var --sysconfdir=/var/vcap/packages/omi/etc/conf --certsdir=/var/vcap/packages/omi/etc/ssl --opensslcflags="$(openssl098_cflags)" --openssllibs="-L$(current_dir)/ext/curl/current_platform/lib $(openssl098_libs)" --openssllibdir="$(openssl098_libdir)")
+ 
+ configureomi100:
+-	(cd omi-1.0.8; ./configure $(DEBUG_FLAGS) --enable-preexec --prefix=/opt/omi --outputdirname=output_openssl_1.0.0 --localstatedir=/var/opt/omi --sysconfdir=/etc/opt/omi/conf --certsdir=/etc/opt/omi/ssl --opensslcflags="$(openssl100_cflags)" --openssllibs="-L$(current_dir)/ext/curl/current_platform/lib $(openssl100_libs)" --openssllibdir="$(openssl100_libdir)")
++	(cd omi-1.0.8; ./configure $(DEBUG_FLAGS) --enable-preexec --prefix=/var/vcap/packages/omi/opt --outputdirname=output_openssl_1.0.0 --localstatedir=/var/vcap/packages/omi/var --sysconfdir=/var/vcap/packages/omi/etc/conf --certsdir=/var/vcap/packages/omi/etc/ssl --opensslcflags="$(openssl100_cflags)" --openssllibs="-L$(current_dir)/ext/curl/current_platform/lib $(openssl100_libs)" --openssllibdir="$(openssl100_libdir)")
+ 
+ lcm098:
+ 	$(MAKE) -C LCM
+diff --git a/Providers/Extras/Scripts/exec_dsc_mof.py b/Providers/Extras/Scripts/exec_dsc_mof.py
+index e92d503..b50a756 100644
+--- a/Providers/Extras/Scripts/exec_dsc_mof.py
++++ b/Providers/Extras/Scripts/exec_dsc_mof.py
+@@ -170,7 +170,7 @@ try:
+     if 'OMI_HOME' in os.environ.keys():
+         prefix=os.environ['OMI_HOME']
+     else:
+-        prefix='/opt/omi'
++        prefix='/var/vcap/packages/omi/opt'
+     os.chdir(prefix+'/lib/Scripts')
+     sys.path.insert(0,'') # put the cwd in the path so we can find our module
+     if sys.version < '2.6':
+diff --git a/Providers/Extras/Scripts/logrotate.conf b/Providers/Extras/Scripts/logrotate.conf
+index 2517c75..27cd289 100644
+--- a/Providers/Extras/Scripts/logrotate.conf
++++ b/Providers/Extras/Scripts/logrotate.conf
+@@ -1,9 +1,9 @@
+-/var/opt/omi/log/*.log {
++/var/vcap/sys/log/omi/*.log {
+     rotate 5
+     sharedscripts
+     weekly
+     compress
+     postrotate
+-	/opt/omi/bin/service_control restart
++	/var/vcap/packages/omi/opt/bin/service_control restart
+     endscript
+ }
+diff --git a/Providers/Extras/Scripts/omsconfig_logrotate.conf b/Providers/Extras/Scripts/omsconfig_logrotate.conf
+index a15ebeb..ddf220f 100644
+--- a/Providers/Extras/Scripts/omsconfig_logrotate.conf
++++ b/Providers/Extras/Scripts/omsconfig_logrotate.conf
+@@ -1,4 +1,4 @@
+-/var/opt/microsoft/omsconfig/omsconfig.log {
++/var/vcap/packages/omsconfig/var/omsconfig.log {
+     rotate 5
+     sharedscripts
+     weekly
+diff --git a/Providers/Modules/Plugins/ChangeTracking/conf/change_tracking.conf b/Providers/Modules/Plugins/ChangeTracking/conf/change_tracking.conf
+index e781f76..6d197de 100644
+--- a/Providers/Modules/Plugins/ChangeTracking/conf/change_tracking.conf
++++ b/Providers/Modules/Plugins/ChangeTracking/conf/change_tracking.conf
+@@ -1,7 +1,7 @@
+ <source>
+   type exec
+   tag oms.changetracking
+-  command /opt/microsoft/omsconfig/Scripts/PerformInventory.py --InMOF /etc/opt/microsoft/omsagent/conf/omsagent.d/change_tracking_inventory.mof --OutXML /etc/opt/omi/conf/omsconfig/configuration/ChangeTrackingInventory.xml > /dev/null && cat /etc/opt/omi/conf/omsconfig/configuration/ChangeTrackingInventory.xml
++  command /var/vcap/packages/omsconfig/opt/Scripts/PerformInventory.py --InMOF /var/vcap/packages/omsagent/etc/conf/omsagent.d/change_tracking_inventory.mof --OutXML /var/vcap/packages/omi/etc/conf/omsconfig/configuration/ChangeTrackingInventory.xml > /dev/null && cat /var/vcap/packages/omi/etc/conf/omsconfig/configuration/ChangeTrackingInventory.xml
+   format tsv
+   keys xml
+   run_interval 300s
+diff --git a/Providers/Modules/Plugins/Common/plugin/heartbeat_lib.rb b/Providers/Modules/Plugins/Common/plugin/heartbeat_lib.rb
+index fa4d84c..20ff835 100644
+--- a/Providers/Modules/Plugins/Common/plugin/heartbeat_lib.rb
++++ b/Providers/Modules/Plugins/Common/plugin/heartbeat_lib.rb
+@@ -47,7 +47,7 @@ module HeartbeatModule
+       return record
+     end
+ 
+-    def enumerate(time, os_conf_file_path = "/etc/opt/microsoft/scx/conf/scx-release", agent_install_conf_file_path = "/etc/opt/microsoft/omsagent/sysconf/installinfo.txt")
++    def enumerate(time, os_conf_file_path = "/var/vcap/packages/scx/etc/conf/scx-release", agent_install_conf_file_path = "/var/vcap/packages/omsagent/etc/sysconf/installinfo.txt")
+       data_item = get_heartbeat_data_item(time, os_conf_file_path, agent_install_conf_file_path)
+       wrapper = {
+          "DataType"=>"HEALTH_ASSESSMENT_BLOB",
+diff --git a/Providers/Modules/Plugins/Common/plugin/in_oms_omi.rb b/Providers/Modules/Plugins/Common/plugin/in_oms_omi.rb
+index 4f2b2c5..c7b4c18 100644
+--- a/Providers/Modules/Plugins/Common/plugin/in_oms_omi.rb
++++ b/Providers/Modules/Plugins/Common/plugin/in_oms_omi.rb
+@@ -15,7 +15,7 @@ module Fluent
+     config_param :counter_name_regex, :string, :default => ".*"
+     config_param :interval, :time, :default => nil
+     config_param :tag, :string, :default => "oms.omi"  
+-    config_param :omi_mapping_path, :string, :default => "/etc/opt/microsoft/omsagent/conf/omsagent.d/omi_mapping.json"
++    config_param :omi_mapping_path, :string, :default => "/var/vcap/packages/omsagent/etc/conf/omsagent.d/omi_mapping.json"
+ 
+     def configure (conf)
+       super
+diff --git a/Providers/Modules/Plugins/Common/plugin/oms_common.rb b/Providers/Modules/Plugins/Common/plugin/oms_common.rb
+index 91df4dd..e546e3f 100644
+--- a/Providers/Modules/Plugins/Common/plugin/oms_common.rb
++++ b/Providers/Modules/Plugins/Common/plugin/oms_common.rb
+@@ -535,7 +535,7 @@ module OMS
+         return @@CurrentTimeZone
+       end # end get_current_timezone
+ 
+-      def get_os_full_name(conf_path = "/etc/opt/microsoft/scx/conf/scx-release")
++      def get_os_full_name(conf_path = "/var/vcap/packages/scx/etc/conf/scx-release")
+         return @@OSFullName if !@@OSFullName.nil?
+ 
+         if File.file?(conf_path)
+@@ -548,7 +548,7 @@ module OMS
+         return @@OSFullName
+       end
+ 
+-      def get_os_name(conf_path = "/etc/opt/microsoft/scx/conf/scx-release")
++      def get_os_name(conf_path = "/var/vcap/packages/scx/etc/conf/scx-release")
+         return @@OSName if !@@OSName.nil?
+ 
+         if File.file?(conf_path)
+@@ -561,7 +561,7 @@ module OMS
+         return @@OSName
+       end
+ 
+-      def get_os_version(conf_path = "/etc/opt/microsoft/scx/conf/scx-release")
++      def get_os_version(conf_path = "/var/vcap/packages/scx/etc/conf/scx-release")
+         return @@OSVersion if !@@OSVersion.nil?
+ 
+         if File.file?(conf_path)
+@@ -600,7 +600,7 @@ module OMS
+         return @@FQDN
+       end
+ 
+-      def get_installed_date(conf_path = "/etc/opt/microsoft/omsagent/sysconf/installinfo.txt")
++      def get_installed_date(conf_path = "/var/vcap/packages/omsagent/etc/sysconf/installinfo.txt")
+         return @@InstalledDate if !@@InstalledDate.nil?
+ 
+         if File.file?(conf_path)
+@@ -619,7 +619,7 @@ module OMS
+         return @@InstalledDate
+       end
+ 
+-      def get_agent_version(conf_path = "/etc/opt/microsoft/omsagent/sysconf/installinfo.txt")
++      def get_agent_version(conf_path = "/var/vcap/packages/omsagent/etc/sysconf/installinfo.txt")
+         return @@AgentVersion if !@@AgentVersion.nil?
+ 
+         if File.file?(conf_path)
+diff --git a/Providers/Modules/Plugins/Common/plugin/out_oms.rb b/Providers/Modules/Plugins/Common/plugin/out_oms.rb
+index 5741b11..6fdb567 100644
+--- a/Providers/Modules/Plugins/Common/plugin/out_oms.rb
++++ b/Providers/Modules/Plugins/Common/plugin/out_oms.rb
+@@ -18,10 +18,10 @@ module Fluent
+       require_relative 'oms_common'
+     end
+ 
+-    config_param :omsadmin_conf_path, :string, :default => '/etc/opt/microsoft/omsagent/conf/omsadmin.conf'
+-    config_param :cert_path, :string, :default => '/etc/opt/microsoft/omsagent/certs/oms.crt'
+-    config_param :key_path, :string, :default => '/etc/opt/microsoft/omsagent/certs/oms.key'
+-    config_param :proxy_conf_path, :string, :default => '/etc/opt/microsoft/omsagent/conf/proxy.conf'
++    config_param :omsadmin_conf_path, :string, :default => '/var/vcap/packages/omsagent/etc/conf/omsadmin.conf'
++    config_param :cert_path, :string, :default => '/var/vcap/packages/omsagent/etc/certs/oms.crt'
++    config_param :key_path, :string, :default => '/var/vcap/packages/omsagent/etc/certs/oms.key'
++    config_param :proxy_conf_path, :string, :default => '/var/vcap/packages/omsagent/etc/conf/proxy.conf'
+     config_param :compress, :bool, :default => true
+ 
+     def configure(conf)
+diff --git a/Providers/Modules/Plugins/Common/plugin/out_oms_blob.rb b/Providers/Modules/Plugins/Common/plugin/out_oms_blob.rb
+index 94a4e22..e9c52f3 100644
+--- a/Providers/Modules/Plugins/Common/plugin/out_oms_blob.rb
++++ b/Providers/Modules/Plugins/Common/plugin/out_oms_blob.rb
+@@ -24,12 +24,12 @@ module Fluent
+       require_relative 'oms_common'
+     end
+ 
+-    config_param :omsadmin_conf_path, :string, :default => '/etc/opt/microsoft/omsagent/conf/omsadmin.conf'
+-    config_param :cert_path, :string, :default => '/etc/opt/microsoft/omsagent/certs/oms.crt'
+-    config_param :key_path, :string, :default => '/etc/opt/microsoft/omsagent/certs/oms.key'
++    config_param :omsadmin_conf_path, :string, :default => '/var/vcap/packages/omsagent/etc/conf/omsadmin.conf'
++    config_param :cert_path, :string, :default => '/var/vcap/packages/omsagent/etc/certs/oms.crt'
++    config_param :key_path, :string, :default => '/var/vcap/packages/omsagent/etc/certs/oms.key'
+     config_param :blob_uri_expiry, :string, :default => '00:10:00'
+     config_param :url_suffix_template, :string, :default => "custom_data_type + '/00000000-0000-0000-0000-000000000002/' + OMS::Common.get_hostname + '/' + OMS::Configuration.agent_id + '/' + suffix + '.log'"
+-    config_param :proxy_conf_path, :string, :default => '/etc/opt/microsoft/omsagent/conf/proxy.conf'
++    config_param :proxy_conf_path, :string, :default => '/var/vcap/packages/omsagent/etc/conf/proxy.conf'
+ 
+     def configure(conf)
+       super
+diff --git a/Providers/Modules/Plugins/PatchManagement/conf/patch_management.conf b/Providers/Modules/Plugins/PatchManagement/conf/patch_management.conf
+index ef68d29..1fd7ac5 100644
+--- a/Providers/Modules/Plugins/PatchManagement/conf/patch_management.conf
++++ b/Providers/Modules/Plugins/PatchManagement/conf/patch_management.conf
+@@ -1,7 +1,7 @@
+ <source>
+   type exec
+   tag oms.patch_management
+-  command /opt/microsoft/omsconfig/Scripts/PerformInventory.py --InMOF /etc/opt/microsoft/omsagent/conf/omsagent.d/patch_management_inventory.mof --OutXML /etc/opt/omi/conf/omsconfig/configuration/CompletePackageInventory.xml > /dev/null && cat /etc/opt/omi/conf/omsconfig/configuration/CompletePackageInventory.xml
++  command /var/vcap/packages/omsconfig/opt/Scripts/PerformInventory.py --InMOF /var/vcap/packages/omsagent/etc/conf/omsagent.d/patch_management_inventory.mof --OutXML /var/vcap/packages/omi/etc/conf/omsconfig/configuration/CompletePackageInventory.xml > /dev/null && cat /var/vcap/packages/omi/etc/conf/omsconfig/configuration/CompletePackageInventory.xml
+   format tsv
+   keys xml
+   run_interval 3h
+@@ -10,7 +10,7 @@
+ <source>
+   type exec
+   tag oms.patch_management_immediate_run
+-  command /opt/microsoft/omsconfig/Scripts/PerformInventory.py --InMOF /etc/opt/microsoft/omsagent/conf/omsagent.d/patch_management_inventory.mof --OutXML /etc/opt/omi/conf/omsconfig/configuration/CompletePackageInventory.xml > /dev/null && cat /etc/opt/omi/conf/omsconfig/configuration/CompletePackageInventory.xml
++  command /var/vcap/packages/omsconfig/opt/Scripts/PerformInventory.py --InMOF /var/vcap/packages/omsagent/etc/conf/omsagent.d/patch_management_inventory.mof --OutXML /var/vcap/packages/omi/etc/conf/omsconfig/configuration/CompletePackageInventory.xml > /dev/null && cat /var/vcap/packages/omi/etc/conf/omsconfig/configuration/CompletePackageInventory.xml
+   format tsv
+   keys xml
+ </source>
+diff --git a/Providers/Modules/Plugins/PatchManagement/plugin/patch_management_lib.rb b/Providers/Modules/Plugins/PatchManagement/plugin/patch_management_lib.rb
+index 01c4b4e..20d3f91 100644
+--- a/Providers/Modules/Plugins/PatchManagement/plugin/patch_management_lib.rb
++++ b/Providers/Modules/Plugins/PatchManagement/plugin/patch_management_lib.rb
+@@ -12,8 +12,8 @@ class LinuxUpdates
+     @@delimiter = "_"
+     @@force_send_last_upload = Time.now
+     MAJOR_MINOR_VERSION_REGEX = /([^\.]+)\.([^\.]+).*/
+-    OMS_ADMIN_FILE = "/etc/opt/microsoft/omsagent/conf/omsadmin.conf"
+-    SCX_RELEASE_FILE = "/etc/opt/microsoft/scx/conf/scx-release"
++    OMS_ADMIN_FILE = "/var/vcap/packages/omsagent/etc/conf/omsadmin.conf"
++    SCX_RELEASE_FILE = "/var/vcap/packages/scx/etc/conf/scx-release"
+ 
+     def self.getAgentDetails()
+         ret = {}
+diff --git a/Providers/Modules/Plugins/VMware/conf/vmware_esxi.conf b/Providers/Modules/Plugins/VMware/conf/vmware_esxi.conf
+index c60dddf..20b9a35 100644
+--- a/Providers/Modules/Plugins/VMware/conf/vmware_esxi.conf
++++ b/Providers/Modules/Plugins/VMware/conf/vmware_esxi.conf
+@@ -25,7 +25,7 @@
+ 
+   buffer_chunk_limit 2m
+   buffer_type file
+-  buffer_path /var/opt/microsoft/omsagent/state/out_oms_api_vmware_logs*.buffer
++  buffer_path /var/vcap/packages/omsagent/var/state/out_oms_api_vmware_logs*.buffer
+   buffer_queue_limit 10
+   flush_interval 20s
+   retry_limit 10
+diff --git a/Providers/PythonProvider.cpp b/Providers/PythonProvider.cpp
+index 4bb2bd4..0337600 100644
+--- a/Providers/PythonProvider.cpp
++++ b/Providers/PythonProvider.cpp
+@@ -42,7 +42,7 @@ typedef util::unique_ptr<char[]> char_array;
+ 
+ char const OMI_PYTHON_VERSION_STR[] = "OMI_PYTHON_VERSION";
+ char const DEFAULT_PYTHON_VERSION[] = "python";
+-char const DEFAULT_OMI_PATH[] = "/opt/omi/";
++char const DEFAULT_OMI_PATH[] = "/var/vcap/packages/omi/opt/";
+ char const SCRIPT_PATH_EXTENSION[] = "/lib/Scripts/";
+ char const DEFAULT_DSC_SCRIPT[] = "client";
+ char const PY_EXTENSION[] = ".py";
+diff --git a/Providers/Scripts/2.4x-2.5x/Scripts/Tests/test_nxOMSPluginProvider.py b/Providers/Scripts/2.4x-2.5x/Scripts/Tests/test_nxOMSPluginProvider.py
+index e8f8330..fca960c 100644
+--- a/Providers/Scripts/2.4x-2.5x/Scripts/Tests/test_nxOMSPluginProvider.py
++++ b/Providers/Scripts/2.4x-2.5x/Scripts/Tests/test_nxOMSPluginProvider.py
+@@ -27,8 +27,8 @@ class nxOMSPluginTestCases(unittest2.TestCase):
+         Setup test resources
+         """
+         nxOMSPlugin.PLUGIN_MODULE_PATH = '/var/tmp/Plugins'
+-        nxOMSPlugin.PLUGIN_PATH = '/var/tmp/opt/microsoft/omsagent/plugin/'
+-        nxOMSPlugin.CONF_PATH = '/var/tmp/etc/opt/microsoft/omsagent/conf/omsagent.d/'
++        nxOMSPlugin.PLUGIN_PATH = '/var/tmp/var/vcap/packages/omsagent/opt/plugin/'
++        nxOMSPlugin.CONF_PATH = '/var/tmp/var/vcap/packages/omsagent/etc/conf/omsagent.d/'
+         nxOMSPlugin.OMS_ACTION = nxOMSPlugin.TestOMSAgent()
+         # remove files from directory
+         os.system('rm -rf /var/tmp/Plugins;' +
+diff --git a/Providers/Scripts/2.4x-2.5x/Scripts/Tests/test_nxProviders.py b/Providers/Scripts/2.4x-2.5x/Scripts/Tests/test_nxProviders.py
+index acdb709..82ab3c2 100755
+--- a/Providers/Scripts/2.4x-2.5x/Scripts/Tests/test_nxProviders.py
++++ b/Providers/Scripts/2.4x-2.5x/Scripts/Tests/test_nxProviders.py
+@@ -3201,16 +3201,16 @@ class nxOMSSyslogTestCases(unittest2.TestCase):
+         """
+         if os.path.exists('/etc/rsyslog.d/95-omsagent.conf'):
+             os.system('cp /etc/rsyslog.d/95-omsagent.conf /etc/rsyslog.d/95-omsagent.conf.bak')
+-            os.system('cp /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf.bak')
++            os.system('cp /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf.bak')
+         elif os.path.exists('/etc/rsyslog.conf'):
+             os.system('cp /etc/rsyslog.conf /etc/rsyslog.conf.bak')
+-            os.system('cp /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf.bak')
++            os.system('cp /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf.bak')
+         elif os.path.exists('/etc/syslog.conf'):
+             os.system('cp /etc/syslog.conf /etc/syslog.conf.bak')
+-            os.system('cp /etc/opt/omi/conf/omsconfig/sysklog-oms.conf /etc/opt/omi/conf/omsconfig/sysklog-oms.conf.bak')
++            os.system('cp /var/vcap/packages/omi/etc/conf/omsconfig/sysklog-oms.conf /var/vcap/packages/omi/etc/conf/omsconfig/sysklog-oms.conf.bak')
+         elif os.path.exists('/etc/syslog-ng/syslog-ng.conf'):
+             os.system('cp /etc/syslog-ng/syslog-ng.conf /etc/syslog-ng/syslog-ng.conf.bak')
+-            os.system('cp /etc/opt/omi/conf/omsconfig/syslog-ng-oms.conf /etc/opt/omi/conf/omsconfig/syslog-ng-oms.conf.bak')            
++            os.system('cp /var/vcap/packages/omi/etc/conf/omsconfig/syslog-ng-oms.conf /var/vcap/packages/omi/etc/conf/omsconfig/syslog-ng-oms.conf.bak')            
+ 
+     def tearDown(self):
+         """
+@@ -3218,16 +3218,16 @@ class nxOMSSyslogTestCases(unittest2.TestCase):
+         """
+         if os.path.exists('/etc/rsyslog.d/95-omsagent.conf'):
+             os.system('mv /etc/rsyslog.d/95-omsagent.conf.bak /etc/rsyslog.d/95-omsagent.conf')
+-            os.system('mv /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf.bak /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf')
++            os.system('mv /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf.bak /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf')
+         elif os.path.exists('/etc/rsyslog.conf'):
+             os.system('mv /etc/rsyslog.conf.bak /etc/rsyslog.conf')
+-            os.system('mv /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf.bak /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf')
++            os.system('mv /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf.bak /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf')
+         elif os.path.exists('/etc/syslog.conf'):
+             os.system('mv /etc/syslog.conf.bak /etc/syslog.conf')
+-            os.system('mv /etc/opt/omi/conf/omsconfig/sysklog-oms.conf.bak /etc/opt/omi/conf/omsconfig/sysklog-oms.conf')
++            os.system('mv /var/vcap/packages/omi/etc/conf/omsconfig/sysklog-oms.conf.bak /var/vcap/packages/omi/etc/conf/omsconfig/sysklog-oms.conf')
+         elif os.path.exists('/etc/syslog-ng/syslog-ng.conf'):
+             os.system('mv /etc/syslog-ng/syslog-ng.conf.bak /etc/syslog-ng/syslog-ng.conf')
+-            os.system('mv /etc/opt/omi/conf/omsconfig/syslog-ng-oms.conf.bak /etc/opt/omi/conf/omsconfig/syslog-ng-oms.conf')            
++            os.system('mv /var/vcap/packages/omi/etc/conf/omsconfig/syslog-ng-oms.conf.bak /var/vcap/packages/omi/etc/conf/omsconfig/syslog-ng-oms.conf')            
+         
+     def make_MI(self,retval,SyslogSource):
+         d=dict()
+@@ -3305,13 +3305,13 @@ class nxOMSAgentTestCases(unittest2.TestCase):
+         """
+         Setup test resources
+         """
+-        os.system('cp /etc/opt/microsoft/omsagent/conf/omsagent.conf /etc/opt/microsoft/omsagent/conf/omsagent.conf.bak')
++        os.system('cp /var/vcap/packages/omsagent/etc/conf/omsagent.conf /var/vcap/packages/omsagent/etc/conf/omsagent.conf.bak')
+ 
+     def tearDown(self):
+         """
+         Remove test resources.
+         """
+-        os.system('mv /etc/opt/microsoft/omsagent/conf/omsagent.conf.bak /etc/opt/microsoft/omsagent/conf/omsagent.conf')            
++        os.system('mv /var/vcap/packages/omsagent/etc/conf/omsagent.conf.bak /var/vcap/packages/omsagent/etc/conf/omsagent.conf')            
+ 
+         
+     def make_MI(self,retval,HeartbeatIntervalSeconds, PerfObject):
+@@ -3398,7 +3398,7 @@ class nxOMSAgentTestCases(unittest2.TestCase):
+         'Get('+repr(g)+' should return ==['+repr(m)+']')
+ 
+     def testSetOMSAgent_add_missing_conf_file(self):
+-        os.system('rm /etc/opt/microsoft/omsagent/conf/omsagent.conf')
++        os.system('rm /var/vcap/packages/omsagent/etc/conf/omsagent.conf')
+         d={'HeartbeatIntervalSeconds':600,'PerfObject':[{'InstanceName':'*', 'IntervalSeconds':600, 'AllInstances':True,
+             'PerformanceCounter':['FreeMegabytes','PercentFreeSpace','PercentUsedSpace','PercentFreeInodes',
+             'PercentUsedInodes','BytesPerSecond','ReadBytesPerSecond','WriteBytesPerSecond'],
+@@ -3414,7 +3414,7 @@ class nxOMSAgentTestCases(unittest2.TestCase):
+         self.assertTrue(nxOMSAgent.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]') 
+ 
+     def testSetGetOMSAgent_add_missing_conf_file(self):
+-        os.system('rm /etc/opt/microsoft/omsagent/conf/omsagent.conf')
++        os.system('rm /var/vcap/packages/omsagent/etc/conf/omsagent.conf')
+         d={'HeartbeatIntervalSeconds':600,'PerfObject':[{'InstanceName':'*', 'IntervalSeconds':600, 'AllInstances':True,
+             'PerformanceCounter':['FreeMegabytes','PercentFreeSpace','PercentUsedSpace','PercentFreeInodes',
+             'PercentUsedInodes','BytesPerSecond','ReadBytesPerSecond','WriteBytesPerSecond'],
+@@ -3441,7 +3441,7 @@ class nxOMSAgentTestCases(unittest2.TestCase):
+         'Get '+repr(g)+' should return == '+repr(m)+'')
+ 
+     def testGetOMSAgent_add_missing_conf_file(self):
+-        os.system('rm /etc/opt/microsoft/omsagent/conf/omsagent.conf')
++        os.system('rm /var/vcap/packages/omsagent/etc/conf/omsagent.conf')
+         d={'HeartbeatIntervalSeconds':600,'PerfObject':[{'InstanceName':'*', 'IntervalSeconds':600, 'AllInstances':True,
+             'PerformanceCounter':['FreeMegabytes','PercentFreeSpace','PercentUsedSpace','PercentFreeInodes',
+             'PercentUsedInodes','BytesPerSecond','ReadBytesPerSecond','WriteBytesPerSecond'],
+@@ -3461,7 +3461,7 @@ class nxOMSAgentTestCases(unittest2.TestCase):
+         'Get '+repr(g)+' should return == '+repr(m)+'')
+ 
+     def testTestOMSAgent_add_missing_conf_file(self):
+-        os.system('rm /etc/opt/microsoft/omsagent/conf/omsagent.conf')
++        os.system('rm /var/vcap/packages/omsagent/etc/conf/omsagent.conf')
+         d={'HeartbeatIntervalSeconds':600,'PerfObject':[{'InstanceName':'*', 'IntervalSeconds':600, 'AllInstances':True,
+             'PerformanceCounter':['FreeMegabytes','PercentFreeSpace','PercentUsedSpace','PercentFreeInodes',
+             'PercentUsedInodes','BytesPerSecond','ReadBytesPerSecond','WriteBytesPerSecond'],
+@@ -3695,7 +3695,7 @@ class nxOMSKeyMgmtTestCases(unittest2.TestCase):
+         sig_txt = (open('./Scripts/Tests/test_mofs/testdsckey.asc','r').read())
+         cls.keymgmt = {'KeyContents': key_txt, \
+                        'KeySignature': sig_txt, 'Ensure':'present'}
+-        cls.conf_dir = '/etc/opt/omi/conf/omsconfig'
++        cls.conf_dir = '/var/vcap/packages/omi/etc/conf/omsconfig'
+         if not os.path.exists(cls.conf_dir):
+             os.system('mkdir -p ' + cls.conf_dir + ' 2>&1 >/dev/null')
+         os.system('cp ' + nxOMSKeyMgmt.signature_keyring_path + ' ' + \
+diff --git a/Providers/Scripts/2.4x-2.5x/Scripts/nxAvailableUpdates.py b/Providers/Scripts/2.4x-2.5x/Scripts/nxAvailableUpdates.py
+index 933424d..8fc5037 100644
+--- a/Providers/Scripts/2.4x-2.5x/Scripts/nxAvailableUpdates.py
++++ b/Providers/Scripts/2.4x-2.5x/Scripts/nxAvailableUpdates.py
+@@ -68,7 +68,7 @@ def GetAptUpdates(Name):
+     d={}
+     # Refresh the repo
+     if helperlib.CONFIG_SYSCONFDIR_DSC == "omsconfig":
+-        cmd = 'sudo /opt/microsoft/omsconfig/Scripts/OMSAptUpdates.sh'
++        cmd = 'sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSAptUpdates.sh'
+     else:
+         cmd = 'apt-get -q update'
+     code, out = RunGetOutput(cmd, False, False)
+@@ -116,7 +116,7 @@ def GetYumUpdates(Name):
+         srch_str=r'Name.*?: (.*?)\n.*?Arch.*?: (.*?)\n.*?Version.*?: (.*?)\n.*?Release.*?: (.*?)\n.*?Repo.*?: (.*?)\n'
+         
+     if helperlib.CONFIG_SYSCONFDIR_DSC == "omsconfig":
+-        yum_list = 'sudo /opt/microsoft/omsconfig/Scripts/OMSYumUpdates.sh '
++        yum_list = 'sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSYumUpdates.sh '
+         yum_info = yum_list
+     else:
+         yum_list = 'yum check-update '
+@@ -174,7 +174,7 @@ def GetZypperUpdates(Name):
+     pkg_list = ''
+     # For omsagent the repo is refreshed in OMSZypperUpdates.sh.
+     if helperlib.CONFIG_SYSCONFDIR_DSC == "omsconfig":
+-        zypper = 'sudo /opt/microsoft/omsconfig/Scripts/OMSZypperUpdates.sh'
++        zypper = 'sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSZypperUpdates.sh'
+     else:
+         zypper = 'zypper -q lu'
+         # Refresh the repo.
+diff --git a/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSAgent.py b/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSAgent.py
+index ceb8310..4f390ae 100644
+--- a/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSAgent.py
++++ b/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSAgent.py
+@@ -13,7 +13,7 @@ nxDSCLog = imp.load_source('nxDSCLog', '../nxDSCLog.py')
+ 
+ LG = nxDSCLog.DSCLog
+ 
+-conf_path = '/etc/opt/microsoft/omsagent/conf/omsagent.conf'
++conf_path = '/var/vcap/packages/omsagent/etc/conf/omsagent.conf'
+ omi_map = None
+ 
+ 
+@@ -176,7 +176,7 @@ def UpdateOMSAgentConf(HeartbeatIntervalSeconds, PerfObject):
+         txt = ''
+     heartbeat_srch_str = r'<source>.*?tag heartbeat.*?</source>\n'
+     heartbeat_srch = re.compile(heartbeat_srch_str, re.M | re.S)
+-    heartbeat_src = '<source>\n  type exec\n  tag heartbeat.output\n  command /opt/microsoft/omsagent/bin/omsadmin.sh -b > /dev/null\n  format tsv\n  keys severity,message\n  run_interval ' + \
++    heartbeat_src = '<source>\n  type exec\n  tag heartbeat.output\n  command /var/vcap/packages/omsagent/opt/bin/omsadmin.sh -b > /dev/null\n  format tsv\n  keys severity,message\n  run_interval ' + \
+         str(HeartbeatIntervalSeconds) + 's\n</source>\n'
+     txt = heartbeat_srch.sub(heartbeat_src, txt)
+     d = {}
+@@ -208,7 +208,7 @@ def UpdateOMSAgentConf(HeartbeatIntervalSeconds, PerfObject):
+         LG().Log(
+             'ERROR', 'Unable to create omsagent configuration at ' + conf_path + '.')
+         return False
+-    if os.system('sudo /opt/microsoft/omsagent/bin/service_control restart') == 0:
++    if os.system('sudo /var/vcap/packages/omsagent/opt/bin/service_control restart') == 0:
+         LG().Log('INFO', 'Successfully restarted omsagent.')
+     else:
+         LG().Log('ERROR', 'Error restarting omsagent.')
+@@ -233,7 +233,7 @@ def rm_unicode(obj):
+ def init_omi_map():
+     global omi_map
+     txt = codecs.open(
+-        '/etc/opt/microsoft/omsagent/sysconf/omi_mapping.json', 'r', 'utf8').read()
++        '/var/vcap/packages/omsagent/etc/sysconf/omi_mapping.json', 'r', 'utf8').read()
+     omi_map = eval(txt)
+ 
+ 
+diff --git a/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSCustomLog.py b/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSCustomLog.py
+index 4d4258a..2483b22 100644
+--- a/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSCustomLog.py
++++ b/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSCustomLog.py
+@@ -15,7 +15,7 @@ nxDSCLog = imp.load_source('nxDSCLog', '../nxDSCLog.py')
+ 
+ LG = nxDSCLog.DSCLog
+ 
+-conf_path = '/etc/opt/microsoft/omsagent/conf/omsagent.d/customlog.conf'
++conf_path = '/var/vcap/packages/omsagent/etc/conf/omsagent.d/customlog.conf'
+ 
+ def init_vars(CustomLogObjects):
+     new_customlogs = []
+@@ -99,7 +99,7 @@ def ReadConf():
+     if not os.path.isfile(conf_path):
+         return [];
+     txt = codecs.open(conf_path, 'r', 'utf8').read().encode('ascii','ignore')
+-    customlog_src_srch_str=r'\n<source>\n  type tail.*?path (.*?)\n.*?pos_file /var/opt/microsoft/omsagent/state/(.*?)\.pos.*?tag oms\.blob\.CustomLog\.(.*?)\.\*.*?format none.*?</source>\n'
++    customlog_src_srch_str=r'\n<source>\n  type tail.*?path (.*?)\n.*?pos_file /var/vcap/packages/omsagent/var/state/(.*?)\.pos.*?tag oms\.blob\.CustomLog\.(.*?)\.\*.*?format none.*?</source>\n'
+     customlog_src_srch=re.compile(customlog_src_srch_str,re.M|re.S)
+     new_customlogs=[]
+     sources=customlog_src_srch.findall(txt)
+@@ -119,9 +119,9 @@ def UpdateConf(CustomLogObjects):
+         for customlog in CustomLogObjects:
+             logname = customlog['LogName']
+             filepaths = ','.join(customlog['FilePath'])
+-            new_source+='\n<source>\n  type tail\n  path ' + filepaths + '\n  pos_file /var/opt/microsoft/omsagent/state/' + logname + '.pos\n  read_from_head true\n  tag oms.blob.CustomLog.' + logname + '.*\n  format none\n</source>\n'
++            new_source+='\n<source>\n  type tail\n  path ' + filepaths + '\n  pos_file /var/vcap/packages/omsagent/var/state/' + logname + '.pos\n  read_from_head true\n  tag oms.blob.CustomLog.' + logname + '.*\n  format none\n</source>\n'
+     txt = header + new_source
+     if os.path.isfile(conf_path): 
+         shutil.copy2(conf_path, conf_path + '.bak')
+     codecs.open(conf_path, 'w', 'utf8').write(txt)
+-    os.system('sudo /opt/microsoft/omsagent/bin/service_control restart')
++    os.system('sudo /var/vcap/packages/omsagent/opt/bin/service_control restart')
+diff --git a/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSGenerateInventoryMof.py b/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSGenerateInventoryMof.py
+index d46a48f..1f7464f 100644
+--- a/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSGenerateInventoryMof.py
++++ b/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSGenerateInventoryMof.py
+@@ -21,8 +21,8 @@ except ImportError:
+     import md5
+     md5const = md5.md5
+ 
+-inventoryMof_path = '/etc/opt/microsoft/omsagent/conf/omsagent.d/'
+-outputxml_path = '/etc/opt/omi/conf/omsconfig/configuration/'
++inventoryMof_path = '/var/vcap/packages/omsagent/etc/conf/omsagent.d/'
++outputxml_path = '/var/vcap/packages/omi/etc/conf/omsconfig/configuration/'
+ 
+ def init_vars(Instances):
+     new_instances = []
+@@ -142,7 +142,7 @@ def GenerateInventoyConfContents(FeatureName, Instances, RunIntervalInSeconds, T
+ <source> \n \
+   type exec \n \
+   tag ' + Tag + ' \n \
+-  command /opt/microsoft/omsconfig/Scripts/PerformInventory.py --InMOF ' + mof_file_path + ' --OutXML ' + outputxml_path + FeatureName + '.xml > /dev/null && cat ' + outputxml_path + FeatureName + '.xml \n \
++  command /var/vcap/packages/omsconfig/opt/Scripts/PerformInventory.py --InMOF ' + mof_file_path + ' --OutXML ' + outputxml_path + FeatureName + '.xml > /dev/null && cat ' + outputxml_path + FeatureName + '.xml \n \
+   format '+ Format + '\n \
+   keys xml \n \
+   run_interval ' + str(RunIntervalInSeconds) + 's \n \
+@@ -204,7 +204,7 @@ def GenerateInventoyMOF(FeatureName, Instances, RunIntervalInSeconds, Tag, Forma
+ 
+     codecs.open(conf_file_path, 'w', 'utf8').write(conf_file_contents)
+ 
+-    os.system('sudo /opt/microsoft/omsagent/bin/service_control restart')
++    os.system('sudo /var/vcap/packages/omsagent/opt/bin/service_control restart')
+ 
+ 
+ def GetFileChecksum(FilePath):
+diff --git a/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSKeyMgmt.py b/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSKeyMgmt.py
+index 07c3e71..c6a0ff2 100755
+--- a/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSKeyMgmt.py
++++ b/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSKeyMgmt.py
+@@ -21,8 +21,8 @@ nxDSCLog = imp.load_source('nxDSCLog', '../nxDSCLog.py')
+ 
+ LG = nxDSCLog.DSCLog
+ 
+-dsc_keyring_path = '/etc/opt/omi/conf/omsconfig/keyring.gpg'
+-signature_keyring_path = '/etc/opt/omi/conf/omsconfig/keymgmtring.gpg'
++dsc_keyring_path = '/var/vcap/packages/omi/etc/conf/omsconfig/keyring.gpg'
++signature_keyring_path = '/var/vcap/packages/omi/etc/conf/omsconfig/keymgmtring.gpg'
+ gpg_bin = '/usr/bin/gpg'
+ tmpdir = '/tmp/omsmgmt'
+ key_contents_path = tmpdir + '/' + 'tmpkey.pub'
+@@ -112,7 +112,7 @@ def Set(KeyContents, KeySignature, Ensure):
+         F.write(KeyContents)
+         F.close()
+     # Verify the signature.
+-    cmd = 'HOME=/var/opt/microsoft/omsagent/run ' + gpg_bin + ' --no-default-keyring --keyring ' \
++    cmd = 'HOME=/var/vcap/sys/run/omsagent ' + gpg_bin + ' --no-default-keyring --keyring ' \
+         + signature_keyring_path + ' --verify ' + \
+         key_signature_path + ' ' + key_contents_path
+     code, out = RunGetOutput(cmd, False, False)
+@@ -124,7 +124,7 @@ def Set(KeyContents, KeySignature, Ensure):
+         return [-1]
+     if Ensure == 'absent':
+         # Get the id so we can remove the key.
+-        cmd = 'HOME=/var/opt/microsoft/omsagent/run ' + gpg_bin + ' --dry-run --no-default-keyring --keyring ' \
++        cmd = 'HOME=/var/vcap/sys/run/omsagent ' + gpg_bin + ' --dry-run --no-default-keyring --keyring ' \
+             + dsc_keyring_path + ' --import ' + key_contents_path
+         code, out = RunGetOutput(cmd, False, False)
+         r = re.search(r'.*?key (.*?):.*?not changed', out)
+@@ -136,7 +136,7 @@ def Set(KeyContents, KeySignature, Ensure):
+             cleanup()
+             return [-1]
+         # We must use the fingerprint in batch mode to prevent interactive questions
+-        cmd = 'HOME=/var/opt/microsoft/omsagent/run ' + gpg_bin + ' --batch --yes --no-default-keyring --keyring ' \
++        cmd = 'HOME=/var/vcap/sys/run/omsagent ' + gpg_bin + ' --batch --yes --no-default-keyring --keyring ' \
+             + dsc_keyring_path + ' --fingerprint ' + key_id
+         code, out = RunGetOutput(cmd, False, False)
+         r = re.search(r'.*?fingerprint = (.*?)\n', out)
+@@ -149,7 +149,7 @@ def Set(KeyContents, KeySignature, Ensure):
+             cleanup()
+             return [-1]
+         # Delete the key.
+-        cmd = 'HOME=/var/opt/microsoft/omsagent/run ' + gpg_bin + ' --batch --yes --no-default-keyring --keyring ' \
++        cmd = 'HOME=/var/vcap/sys/run/omsagent ' + gpg_bin + ' --batch --yes --no-default-keyring --keyring ' \
+             + dsc_keyring_path + ' --delete-secret-and-public-key "' + key_fingerprint + '"'
+         code, out = RunGetOutput(cmd, False, False)
+         if code != 0:
+@@ -159,7 +159,7 @@ def Set(KeyContents, KeySignature, Ensure):
+             return [-1]
+     else:
+         # Add the key.
+-        cmd = 'HOME=/var/opt/microsoft/omsagent/run ' + gpg_bin + ' --no-default-keyring --keyring ' \
++        cmd = 'HOME=/var/vcap/sys/run/omsagent ' + gpg_bin + ' --no-default-keyring --keyring ' \
+             + dsc_keyring_path + ' --import ' + key_contents_path
+         code, out = RunGetOutput(cmd, False, False)
+     if code != 0:
+@@ -188,7 +188,7 @@ def Test(KeyContents, KeySignature, Ensure):
+     else:
+         F.write(KeyContents)
+         F.close()
+-    cmd = 'HOME=/var/opt/microsoft/omsagent/run ' + gpg_bin + ' --dry-run --options /dev/null --no-default-keyring --keyring ' \
++    cmd = 'HOME=/var/vcap/sys/run/omsagent ' + gpg_bin + ' --dry-run --options /dev/null --no-default-keyring --keyring ' \
+         + dsc_keyring_path + ' --import ' + key_contents_path
+     code, out = RunGetOutput(cmd, False, False)
+     if code != 0:
+diff --git a/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSPlugin.py b/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSPlugin.py
+index 621fe34..047d101 100644
+--- a/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSPlugin.py
++++ b/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSPlugin.py
+@@ -42,7 +42,7 @@ class IOMSAgent:
+     
+ class OMSAgentUtil(IOMSAgent):
+     def restart_oms_agent(self):
+-        if os.system('sudo /opt/microsoft/omsagent/bin/service_control restart') == 0:
++        if os.system('sudo /var/vcap/packages/omsagent/opt/bin/service_control restart') == 0:
+             return True
+         else:
+             LG().Log('ERROR', 'Error restarting omsagent.')
+@@ -52,9 +52,9 @@ class TestOMSAgent(IOMSAgent):
+     def restart_oms_agent(self):
+         return True
+         
+-PLUGIN_PATH = '/opt/microsoft/omsagent/plugin/'
+-CONF_PATH = '/etc/opt/microsoft/omsagent/conf/omsagent.d/'
+-PLUGIN_MODULE_PATH = '/opt/microsoft/omsconfig/modules/nxOMSPlugin/DSCResources/MSFT_nxOMSPluginResource/Plugins'
++PLUGIN_PATH = '/var/vcap/packages/omsagent/opt/plugin/'
++CONF_PATH = '/var/vcap/packages/omsagent/etc/conf/omsagent.d/'
++PLUGIN_MODULE_PATH = '/var/vcap/packages/omsconfig/opt/modules/nxOMSPlugin/DSCResources/MSFT_nxOMSPluginResource/Plugins'
+ OMS_ACTION = OMSAgentUtil()
+ 
+ def init_vars(Plugins):
+diff --git a/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSSyslog.py b/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSSyslog.py
+index 493ed7f..401ef32 100644
+--- a/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSSyslog.py
++++ b/Providers/Scripts/2.4x-2.5x/Scripts/nxOMSSyslog.py
+@@ -16,8 +16,8 @@ rsyslog_conf_path = '/etc/rsyslog.conf'
+ rsyslog_inc_conf_path = '/etc/rsyslog.d/95-omsagent.conf'
+ syslog_ng_conf_path = '/etc/syslog-ng/syslog-ng.conf'
+ sysklog_conf_path='/etc/syslog.conf'
+-oms_syslog_ng_conf_path = '/etc/opt/omi/conf/omsconfig/syslog-ng-oms.conf'
+-oms_rsyslog_conf_path = '/etc/opt/omi/conf/omsconfig/rsyslog-oms.conf'
++oms_syslog_ng_conf_path = '/var/vcap/packages/omi/etc/conf/omsconfig/syslog-ng-oms.conf'
++oms_rsyslog_conf_path = '/var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf'
+ conf_path = ''
+ 
+ 
+@@ -193,7 +193,7 @@ def UpdateSyslogConf(SyslogSource):
+         LG().Log(
+             'ERROR', 'Unable to create omsagent rsyslog configuration at ' + conf_path + '.')
+         return False
+-    if os.system('sudo /opt/microsoft/omsconfig/Scripts/OMSRsyslog.post.sh ' + arg) == 0:
++    if os.system('sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSRsyslog.post.sh ' + arg) == 0:
+         LG().Log('INFO', 'Successfully executed OMSRsyslog.post.sh.')
+     else:
+         LG().Log('ERROR', 'Error executing OMSRsyslog.post.sh.')
+@@ -257,7 +257,7 @@ def UpdateSyslogNGConf(SyslogSource):
+         LG().Log(
+             'ERROR', 'Unable to create omsagent syslog-ng configuration at ' + conf_path + '.')
+         return False
+-    if os.system('sudo /opt/microsoft/omsconfig/Scripts/OMSSyslog-ng.post.sh') == 0:
++    if os.system('sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSSyslog-ng.post.sh') == 0:
+         LG().Log('INFO', 'Successfully executed OMSSyslog-ng.post.sh.')
+     else:
+         LG().Log('ERROR', 'Error executing OMSSyslog-ng.post.sh.')
+diff --git a/Providers/Scripts/2.4x-2.5x/Scripts/nxService.py b/Providers/Scripts/2.4x-2.5x/Scripts/nxService.py
+index 12aae27..2b98b30 100644
+--- a/Providers/Scripts/2.4x-2.5x/Scripts/nxService.py
++++ b/Providers/Scripts/2.4x-2.5x/Scripts/nxService.py
+@@ -1564,9 +1564,9 @@ def UpstartGetAll(sc):
+ def InitdGetAll(sc):
+     d={}
+     if helperlib.CONFIG_SYSCONFDIR_DSC == "omsconfig":
+-        initd_service_status = 'sudo /opt/microsoft/omsconfig/Scripts/OMSServiceStat.sh'
++        initd_service_status = 'sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSServiceStat.sh'
+         status_postfix = ''
+-        initd_service_status_all = 'sudo /opt/microsoft/omsconfig/Scripts/OMSServiceStatAll.sh'
++        initd_service_status_all = 'sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSServiceStatAll.sh'
+     else:
+         initd_service_status = initd_service
+         status_postfix = ' status'
+diff --git a/Providers/Scripts/2.6x-2.7x/Scripts/Tests/test_nxOMSPluginProvider.py b/Providers/Scripts/2.6x-2.7x/Scripts/Tests/test_nxOMSPluginProvider.py
+index e8f8330..fca960c 100644
+--- a/Providers/Scripts/2.6x-2.7x/Scripts/Tests/test_nxOMSPluginProvider.py
++++ b/Providers/Scripts/2.6x-2.7x/Scripts/Tests/test_nxOMSPluginProvider.py
+@@ -27,8 +27,8 @@ class nxOMSPluginTestCases(unittest2.TestCase):
+         Setup test resources
+         """
+         nxOMSPlugin.PLUGIN_MODULE_PATH = '/var/tmp/Plugins'
+-        nxOMSPlugin.PLUGIN_PATH = '/var/tmp/opt/microsoft/omsagent/plugin/'
+-        nxOMSPlugin.CONF_PATH = '/var/tmp/etc/opt/microsoft/omsagent/conf/omsagent.d/'
++        nxOMSPlugin.PLUGIN_PATH = '/var/tmp/var/vcap/packages/omsagent/opt/plugin/'
++        nxOMSPlugin.CONF_PATH = '/var/tmp/var/vcap/packages/omsagent/etc/conf/omsagent.d/'
+         nxOMSPlugin.OMS_ACTION = nxOMSPlugin.TestOMSAgent()
+         # remove files from directory
+         os.system('rm -rf /var/tmp/Plugins;' +
+diff --git a/Providers/Scripts/2.6x-2.7x/Scripts/Tests/test_nxProviders.py b/Providers/Scripts/2.6x-2.7x/Scripts/Tests/test_nxProviders.py
+index 374fd35..ebcd183 100755
+--- a/Providers/Scripts/2.6x-2.7x/Scripts/Tests/test_nxProviders.py
++++ b/Providers/Scripts/2.6x-2.7x/Scripts/Tests/test_nxProviders.py
+@@ -3203,16 +3203,16 @@ class nxOMSSyslogTestCases(unittest2.TestCase):
+         """
+         if os.path.exists('/etc/rsyslog.d/95-omsagent.conf'):
+             os.system('cp /etc/rsyslog.d/95-omsagent.conf /etc/rsyslog.d/95-omsagent.conf.bak')
+-            os.system('cp /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf.bak')
++            os.system('cp /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf.bak')
+         elif os.path.exists('/etc/rsyslog.conf'):
+             os.system('cp /etc/rsyslog.conf /etc/rsyslog.conf.bak')
+-            os.system('cp /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf.bak')
++            os.system('cp /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf.bak')
+         elif os.path.exists('/etc/syslog.conf'):
+             os.system('cp /etc/syslog.conf /etc/syslog.conf.bak')
+-            os.system('cp /etc/opt/omi/conf/omsconfig/sysklog-oms.conf /etc/opt/omi/conf/omsconfig/sysklog-oms.conf.bak')
++            os.system('cp /var/vcap/packages/omi/etc/conf/omsconfig/sysklog-oms.conf /var/vcap/packages/omi/etc/conf/omsconfig/sysklog-oms.conf.bak')
+         elif os.path.exists('/etc/syslog-ng/syslog-ng.conf'):
+             os.system('cp /etc/syslog-ng/syslog-ng.conf /etc/syslog-ng/syslog-ng.conf.bak')
+-            os.system('cp /etc/opt/omi/conf/omsconfig/syslog-ng-oms.conf /etc/opt/omi/conf/omsconfig/syslog-ng-oms.conf.bak')            
++            os.system('cp /var/vcap/packages/omi/etc/conf/omsconfig/syslog-ng-oms.conf /var/vcap/packages/omi/etc/conf/omsconfig/syslog-ng-oms.conf.bak')            
+ 
+     def tearDown(self):
+         """
+@@ -3220,16 +3220,16 @@ class nxOMSSyslogTestCases(unittest2.TestCase):
+         """
+         if os.path.exists('/etc/rsyslog.d/95-omsagent.conf'):
+             os.system('mv /etc/rsyslog.d/95-omsagent.conf.bak /etc/rsyslog.d/95-omsagent.conf')
+-            os.system('mv /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf.bak /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf')
++            os.system('mv /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf.bak /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf')
+         elif os.path.exists('/etc/rsyslog.conf'):
+             os.system('mv /etc/rsyslog.conf.bak /etc/rsyslog.conf')
+-            os.system('mv /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf.bak /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf')
++            os.system('mv /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf.bak /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf')
+         elif os.path.exists('/etc/syslog.conf'):
+             os.system('mv /etc/syslog.conf.bak /etc/syslog.conf')
+-            os.system('mv /etc/opt/omi/conf/omsconfig/sysklog-oms.conf.bak /etc/opt/omi/conf/omsconfig/sysklog-oms.conf')
++            os.system('mv /var/vcap/packages/omi/etc/conf/omsconfig/sysklog-oms.conf.bak /var/vcap/packages/omi/etc/conf/omsconfig/sysklog-oms.conf')
+         elif os.path.exists('/etc/syslog-ng/syslog-ng.conf'):
+             os.system('mv /etc/syslog-ng/syslog-ng.conf.bak /etc/syslog-ng/syslog-ng.conf')
+-            os.system('mv /etc/opt/omi/conf/omsconfig/syslog-ng-oms.conf.bak /etc/opt/omi/conf/omsconfig/syslog-ng-oms.conf')            
++            os.system('mv /var/vcap/packages/omi/etc/conf/omsconfig/syslog-ng-oms.conf.bak /var/vcap/packages/omi/etc/conf/omsconfig/syslog-ng-oms.conf')            
+         
+     def make_MI(self,retval,SyslogSource):
+         d=dict()
+@@ -3305,13 +3305,13 @@ class nxOMSAgentTestCases(unittest2.TestCase):
+         """
+         Setup test resources
+         """
+-        os.system('cp /etc/opt/microsoft/omsagent/conf/omsagent.conf /etc/opt/microsoft/omsagent/conf/omsagent.conf.bak')
++        os.system('cp /var/vcap/packages/omsagent/etc/conf/omsagent.conf /var/vcap/packages/omsagent/etc/conf/omsagent.conf.bak')
+ 
+     def tearDown(self):
+         """
+         Remove test resources.
+         """
+-        os.system('mv /etc/opt/microsoft/omsagent/conf/omsagent.conf.bak /etc/opt/microsoft/omsagent/conf/omsagent.conf')            
++        os.system('mv /var/vcap/packages/omsagent/etc/conf/omsagent.conf.bak /var/vcap/packages/omsagent/etc/conf/omsagent.conf')            
+ 
+         
+     def make_MI(self,retval,HeartbeatIntervalSeconds, PerfObject):
+@@ -3398,7 +3398,7 @@ class nxOMSAgentTestCases(unittest2.TestCase):
+         'Get('+repr(g)+' should return ==['+repr(m)+']')
+ 
+     def testSetOMSAgent_add_missing_conf_file(self):
+-        os.system('rm /etc/opt/microsoft/omsagent/conf/omsagent.conf')
++        os.system('rm /var/vcap/packages/omsagent/etc/conf/omsagent.conf')
+         d={'HeartbeatIntervalSeconds':600,'PerfObject':[{'InstanceName':'*', 'IntervalSeconds':600, 'AllInstances':True,
+             'PerformanceCounter':['FreeMegabytes','PercentFreeSpace','PercentUsedSpace','PercentFreeInodes',
+             'PercentUsedInodes','BytesPerSecond','ReadBytesPerSecond','WriteBytesPerSecond'],
+@@ -3414,7 +3414,7 @@ class nxOMSAgentTestCases(unittest2.TestCase):
+         self.assertTrue(nxOMSAgent.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]') 
+ 
+     def testSetGetOMSAgent_add_missing_conf_file(self):
+-        os.system('rm /etc/opt/microsoft/omsagent/conf/omsagent.conf')
++        os.system('rm /var/vcap/packages/omsagent/etc/conf/omsagent.conf')
+         d={'HeartbeatIntervalSeconds':600,'PerfObject':[{'InstanceName':'*', 'IntervalSeconds':600, 'AllInstances':True,
+             'PerformanceCounter':['FreeMegabytes','PercentFreeSpace','PercentUsedSpace','PercentFreeInodes',
+             'PercentUsedInodes','BytesPerSecond','ReadBytesPerSecond','WriteBytesPerSecond'],
+@@ -3441,7 +3441,7 @@ class nxOMSAgentTestCases(unittest2.TestCase):
+         'Get '+repr(g)+' should return == '+repr(m)+'')
+ 
+     def testGetOMSAgent_add_missing_conf_file(self):
+-        os.system('rm /etc/opt/microsoft/omsagent/conf/omsagent.conf')
++        os.system('rm /var/vcap/packages/omsagent/etc/conf/omsagent.conf')
+         d={'HeartbeatIntervalSeconds':600,'PerfObject':[{'InstanceName':'*', 'IntervalSeconds':600, 'AllInstances':True,
+             'PerformanceCounter':['FreeMegabytes','PercentFreeSpace','PercentUsedSpace','PercentFreeInodes',
+             'PercentUsedInodes','BytesPerSecond','ReadBytesPerSecond','WriteBytesPerSecond'],
+@@ -3461,7 +3461,7 @@ class nxOMSAgentTestCases(unittest2.TestCase):
+         'Get '+repr(g)+' should return == '+repr(m)+'')
+ 
+     def testTestOMSAgent_add_missing_conf_file(self):
+-        os.system('rm /etc/opt/microsoft/omsagent/conf/omsagent.conf')
++        os.system('rm /var/vcap/packages/omsagent/etc/conf/omsagent.conf')
+         d={'HeartbeatIntervalSeconds':600,'PerfObject':[{'InstanceName':'*', 'IntervalSeconds':600, 'AllInstances':True,
+             'PerformanceCounter':['FreeMegabytes','PercentFreeSpace','PercentUsedSpace','PercentFreeInodes',
+             'PercentUsedInodes','BytesPerSecond','ReadBytesPerSecond','WriteBytesPerSecond'],
+@@ -3693,7 +3693,7 @@ class nxOMSKeyMgmtTestCases(unittest2.TestCase):
+         sig_txt = (open('./Scripts/Tests/test_mofs/testdsckey.asc','r').read())
+         cls.keymgmt = {'KeyContents': key_txt, \
+                        'KeySignature': sig_txt, 'Ensure':'present'}
+-        cls.conf_dir = '/etc/opt/omi/conf/omsconfig'
++        cls.conf_dir = '/var/vcap/packages/omi/etc/conf/omsconfig'
+         if not os.path.exists(cls.conf_dir):
+             os.system('mkdir -p ' + cls.conf_dir + ' 2>&1 >/dev/null')
+         os.system('cp ' + nxOMSKeyMgmt.signature_keyring_path + ' ' + \
+diff --git a/Providers/Scripts/2.6x-2.7x/Scripts/nxAvailableUpdates.py b/Providers/Scripts/2.6x-2.7x/Scripts/nxAvailableUpdates.py
+index 9088e65..5063e86 100644
+--- a/Providers/Scripts/2.6x-2.7x/Scripts/nxAvailableUpdates.py
++++ b/Providers/Scripts/2.6x-2.7x/Scripts/nxAvailableUpdates.py
+@@ -69,7 +69,7 @@ def GetAptUpdates(Name):
+     d={}
+     # Refresh the repo
+     if helperlib.CONFIG_SYSCONFDIR_DSC == "omsconfig":
+-        cmd = 'sudo /opt/microsoft/omsconfig/Scripts/OMSAptUpdates.sh'
++        cmd = 'sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSAptUpdates.sh'
+     else:
+         cmd = 'apt-get -q update'
+     code, out = RunGetOutput(cmd, False, False)
+@@ -117,7 +117,7 @@ def GetYumUpdates(Name):
+         srch_str=r'Name.*?: (.*?)\n.*?Arch.*?: (.*?)\n.*?Version.*?: (.*?)\n.*?Release.*?: (.*?)\n.*?Repo.*?: (.*?)\n'
+         
+     if helperlib.CONFIG_SYSCONFDIR_DSC == "omsconfig":
+-        yum_list = 'sudo /opt/microsoft/omsconfig/Scripts/OMSYumUpdates.sh '
++        yum_list = 'sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSYumUpdates.sh '
+         yum_info = yum_list
+     else:
+         yum_list = 'yum check-update '
+@@ -175,7 +175,7 @@ def GetZypperUpdates(Name):
+     pkg_list = ''
+     # For omsagent the repo is refreshed in OMSZypperUpdates.sh.
+     if helperlib.CONFIG_SYSCONFDIR_DSC == "omsconfig":
+-        zypper = 'sudo /opt/microsoft/omsconfig/Scripts/OMSZypperUpdates.sh'
++        zypper = 'sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSZypperUpdates.sh'
+     else:
+         zypper = 'zypper -q lu'
+         # Refresh the repo.
+diff --git a/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSAgent.py b/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSAgent.py
+index 6f643e5..40d9bc0 100644
+--- a/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSAgent.py
++++ b/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSAgent.py
+@@ -13,7 +13,7 @@ nxDSCLog = imp.load_source('nxDSCLog', '../nxDSCLog.py')
+ 
+ LG = nxDSCLog.DSCLog
+ 
+-conf_path = '/etc/opt/microsoft/omsagent/conf/omsagent.conf'
++conf_path = '/var/vcap/packages/omsagent/etc/conf/omsagent.conf'
+ omi_map = None
+ 
+ 
+@@ -173,7 +173,7 @@ def UpdateOMSAgentConf(HeartbeatIntervalSeconds, PerfObject):
+         txt = ''
+     heartbeat_srch_str = r'<source>.*?tag heartbeat.*?</source>\n'
+     heartbeat_srch = re.compile(heartbeat_srch_str, re.M | re.S)
+-    heartbeat_src = '<source>\n  type exec\n  tag heartbeat.output\n  command /opt/microsoft/omsagent/bin/omsadmin.sh -b > /dev/null\n  format tsv\n  keys severity,message\n  run_interval ' + \
++    heartbeat_src = '<source>\n  type exec\n  tag heartbeat.output\n  command /var/vcap/packages/omsagent/opt/bin/omsadmin.sh -b > /dev/null\n  format tsv\n  keys severity,message\n  run_interval ' + \
+         str(HeartbeatIntervalSeconds) + 's\n</source>\n'
+     txt = heartbeat_srch.sub(heartbeat_src, txt)
+     d = {}
+@@ -205,7 +205,7 @@ def UpdateOMSAgentConf(HeartbeatIntervalSeconds, PerfObject):
+         LG().Log(
+             'ERROR', 'Unable to create omsagent configuration at ' + conf_path + '.')
+         return False
+-    if os.system('sudo /opt/microsoft/omsagent/bin/service_control restart') == 0:
++    if os.system('sudo /var/vcap/packages/omsagent/opt/bin/service_control restart') == 0:
+         LG().Log('INFO', 'Successfully restarted omsagent.')
+     else:
+         LG().Log('ERROR', 'Error restarting omsagent.')
+@@ -230,7 +230,7 @@ def rm_unicode(obj):
+ def init_omi_map():
+     global omi_map
+     txt = codecs.open(
+-        '/etc/opt/microsoft/omsagent/sysconf/omi_mapping.json', 'r', 'utf8').read()
++        '/var/vcap/packages/omsagent/etc/sysconf/omi_mapping.json', 'r', 'utf8').read()
+     omi_map = rm_unicode(json.loads(txt))
+ 
+ 
+diff --git a/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSCustomLog.py b/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSCustomLog.py
+index bd80451..3219ee1 100644
+--- a/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSCustomLog.py
++++ b/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSCustomLog.py
+@@ -15,7 +15,7 @@ nxDSCLog = imp.load_source('nxDSCLog', '../nxDSCLog.py')
+ 
+ LG = nxDSCLog.DSCLog
+ 
+-conf_path = '/etc/opt/microsoft/omsagent/conf/omsagent.d/customlog.conf'
++conf_path = '/var/vcap/packages/omsagent/etc/conf/omsagent.d/customlog.conf'
+ 
+ def init_vars(CustomLogObjects):
+     new_customlogs = []
+@@ -100,7 +100,7 @@ def ReadConf():
+     if not os.path.isfile(conf_path):
+         return [];
+     txt = codecs.open(conf_path, 'r', 'utf8').read().encode('ascii','ignore')
+-    customlog_src_srch_str=r'\n<source>\n  type tail.*?path (.*?)\n.*?pos_file /var/opt/microsoft/omsagent/state/(.*?)\.pos.*?tag oms\.blob\.CustomLog\.(.*?)\.\*.*?format none.*?</source>\n'
++    customlog_src_srch_str=r'\n<source>\n  type tail.*?path (.*?)\n.*?pos_file /var/vcap/packages/omsagent/var/state/(.*?)\.pos.*?tag oms\.blob\.CustomLog\.(.*?)\.\*.*?format none.*?</source>\n'
+     customlog_src_srch=re.compile(customlog_src_srch_str,re.M|re.S)
+     new_customlogs=[]
+     sources=customlog_src_srch.findall(txt)
+@@ -120,9 +120,9 @@ def UpdateConf(CustomLogObjects):
+         for customlog in CustomLogObjects:
+             logname = customlog['LogName']
+             filepaths = ','.join(customlog['FilePath'])
+-            new_source+='\n<source>\n  type tail\n  path ' + filepaths + '\n  pos_file /var/opt/microsoft/omsagent/state/' + logname + '.pos\n  read_from_head true\n  tag oms.blob.CustomLog.' + logname + '.*\n  format none\n</source>\n'
++            new_source+='\n<source>\n  type tail\n  path ' + filepaths + '\n  pos_file /var/vcap/packages/omsagent/var/state/' + logname + '.pos\n  read_from_head true\n  tag oms.blob.CustomLog.' + logname + '.*\n  format none\n</source>\n'
+     txt = header + new_source
+     if os.path.isfile(conf_path): 
+         shutil.copy2(conf_path, conf_path + '.bak')
+     codecs.open(conf_path, 'w', 'utf8').write(txt)
+-    os.system('sudo /opt/microsoft/omsagent/bin/service_control restart')
++    os.system('sudo /var/vcap/packages/omsagent/opt/bin/service_control restart')
+diff --git a/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSGenerateInventoryMof.py b/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSGenerateInventoryMof.py
+index 7508754..8512bfb 100644
+--- a/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSGenerateInventoryMof.py
++++ b/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSGenerateInventoryMof.py
+@@ -16,8 +16,8 @@ nxDSCLog = imp.load_source('nxDSCLog', '../nxDSCLog.py')
+ 
+ LG = nxDSCLog.DSCLog
+ 
+-inventoryMof_path = '/etc/opt/microsoft/omsagent/conf/omsagent.d/'
+-outputxml_path = '/etc/opt/omi/conf/omsconfig/configuration/'
++inventoryMof_path = '/var/vcap/packages/omsagent/etc/conf/omsagent.d/'
++outputxml_path = '/var/vcap/packages/omi/etc/conf/omsconfig/configuration/'
+ 
+ def init_vars(Instances):
+     new_instances = []
+@@ -137,7 +137,7 @@ def GenerateInventoyConfContents(FeatureName, Instances, RunIntervalInSeconds, T
+ <source> \n \
+   type exec \n \
+   tag ' + Tag + ' \n \
+-  command /opt/microsoft/omsconfig/Scripts/PerformInventory.py --InMOF ' + mof_file_path + ' --OutXML ' + outputxml_path + FeatureName + '.xml > /dev/null && cat ' + outputxml_path + FeatureName + '.xml \n \
++  command /var/vcap/packages/omsconfig/opt/Scripts/PerformInventory.py --InMOF ' + mof_file_path + ' --OutXML ' + outputxml_path + FeatureName + '.xml > /dev/null && cat ' + outputxml_path + FeatureName + '.xml \n \
+   format '+ Format + '\n \
+   keys xml \n \
+   run_interval ' + str(RunIntervalInSeconds) + 's \n \
+@@ -199,7 +199,7 @@ def GenerateInventoyMOF(FeatureName, Instances, RunIntervalInSeconds, Tag, Forma
+ 
+     codecs.open(conf_file_path, 'w', 'utf8').write(conf_file_contents)
+ 
+-    os.system('sudo /opt/microsoft/omsagent/bin/service_control restart')
++    os.system('sudo /var/vcap/packages/omsagent/opt/bin/service_control restart')
+ 
+ 
+ def GetFileChecksum(FilePath):
+diff --git a/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSKeyMgmt.py b/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSKeyMgmt.py
+index fc125b2..f738d30 100755
+--- a/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSKeyMgmt.py
++++ b/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSKeyMgmt.py
+@@ -24,8 +24,8 @@ nxDSCLog = imp.load_source('nxDSCLog', '../nxDSCLog.py')
+ 
+ LG = nxDSCLog.DSCLog
+ 
+-dsc_keyring_path = '/etc/opt/omi/conf/omsconfig/keyring.gpg'
+-signature_keyring_path = '/etc/opt/omi/conf/omsconfig/keymgmtring.gpg'
++dsc_keyring_path = '/var/vcap/packages/omi/etc/conf/omsconfig/keyring.gpg'
++signature_keyring_path = '/var/vcap/packages/omi/etc/conf/omsconfig/keymgmtring.gpg'
+ gpg_bin = '/usr/bin/gpg'
+ tmpdir = '/tmp/omsmgmt'
+ key_contents_path = tmpdir + '/' + 'tmpkey.pub'
+@@ -115,7 +115,7 @@ def Set(KeyContents, KeySignature, Ensure):
+             F.write(KeyContents)
+             F.close()
+     # Verify the signature.
+-    cmd = 'HOME=/var/opt/microsoft/omsagent/run ' + gpg_bin + ' --no-default-keyring --keyring ' \
++    cmd = 'HOME=/var/vcap/sys/run/omsagent ' + gpg_bin + ' --no-default-keyring --keyring ' \
+         + signature_keyring_path + ' --verify ' + \
+         key_signature_path + ' ' + key_contents_path
+     code, out = RunGetOutput(cmd, False, False)
+@@ -127,7 +127,7 @@ def Set(KeyContents, KeySignature, Ensure):
+         return [-1]
+     if Ensure == 'absent':
+         # Get the id so we can remove the key.
+-        cmd = 'HOME=/var/opt/microsoft/omsagent/run ' + gpg_bin + ' --dry-run --no-default-keyring --keyring ' \
++        cmd = 'HOME=/var/vcap/sys/run/omsagent ' + gpg_bin + ' --dry-run --no-default-keyring --keyring ' \
+             + dsc_keyring_path + ' --import ' + key_contents_path
+         code, out = RunGetOutput(cmd, False, False)
+         r = re.search(r'.*?key (.*?):.*?not changed', out)
+@@ -139,7 +139,7 @@ def Set(KeyContents, KeySignature, Ensure):
+             cleanup()
+             return [-1]
+         # We must use the fingerprint in batch mode to prevent interactive questions
+-        cmd = 'HOME=/var/opt/microsoft/omsagent/run ' + gpg_bin + ' --batch --yes --no-default-keyring --keyring ' \
++        cmd = 'HOME=/var/vcap/sys/run/omsagent ' + gpg_bin + ' --batch --yes --no-default-keyring --keyring ' \
+             + dsc_keyring_path + ' --fingerprint ' + key_id
+         code, out = RunGetOutput(cmd, False, False)
+         r = re.search(r'.*?fingerprint = (.*?)\n', out)
+@@ -152,7 +152,7 @@ def Set(KeyContents, KeySignature, Ensure):
+             cleanup()
+             return [-1]
+         # Delete the key.
+-        cmd = 'HOME=/var/opt/microsoft/omsagent/run ' + gpg_bin + ' --batch --yes --no-default-keyring --keyring ' \
++        cmd = 'HOME=/var/vcap/sys/run/omsagent ' + gpg_bin + ' --batch --yes --no-default-keyring --keyring ' \
+             + dsc_keyring_path + ' --delete-secret-and-public-key "' + key_fingerprint + '"'
+         code, out = RunGetOutput(cmd, False, False)
+         if code != 0:
+@@ -162,7 +162,7 @@ def Set(KeyContents, KeySignature, Ensure):
+             return [-1]
+     else:
+         # Add the key.
+-        cmd = 'HOME=/var/opt/microsoft/omsagent/run ' + gpg_bin + ' --no-default-keyring --keyring ' \
++        cmd = 'HOME=/var/vcap/sys/run/omsagent ' + gpg_bin + ' --no-default-keyring --keyring ' \
+             + dsc_keyring_path + ' --import ' + key_contents_path
+         code, out = RunGetOutput(cmd, False, False)
+     if code != 0:
+@@ -191,7 +191,7 @@ def Test(KeyContents, KeySignature, Ensure):
+         else:
+             F.write(KeyContents)
+             F.close()
+-    cmd = 'HOME=/var/opt/microsoft/omsagent/run ' + gpg_bin + ' --dry-run --no-default-keyring --keyring ' \
++    cmd = 'HOME=/var/vcap/sys/run/omsagent ' + gpg_bin + ' --dry-run --no-default-keyring --keyring ' \
+         + dsc_keyring_path + ' --import ' + key_contents_path
+     code, out = RunGetOutput(cmd, False, False)
+     if code != 0:
+diff --git a/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSPlugin.py b/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSPlugin.py
+index 621fe34..047d101 100644
+--- a/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSPlugin.py
++++ b/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSPlugin.py
+@@ -42,7 +42,7 @@ class IOMSAgent:
+     
+ class OMSAgentUtil(IOMSAgent):
+     def restart_oms_agent(self):
+-        if os.system('sudo /opt/microsoft/omsagent/bin/service_control restart') == 0:
++        if os.system('sudo /var/vcap/packages/omsagent/opt/bin/service_control restart') == 0:
+             return True
+         else:
+             LG().Log('ERROR', 'Error restarting omsagent.')
+@@ -52,9 +52,9 @@ class TestOMSAgent(IOMSAgent):
+     def restart_oms_agent(self):
+         return True
+         
+-PLUGIN_PATH = '/opt/microsoft/omsagent/plugin/'
+-CONF_PATH = '/etc/opt/microsoft/omsagent/conf/omsagent.d/'
+-PLUGIN_MODULE_PATH = '/opt/microsoft/omsconfig/modules/nxOMSPlugin/DSCResources/MSFT_nxOMSPluginResource/Plugins'
++PLUGIN_PATH = '/var/vcap/packages/omsagent/opt/plugin/'
++CONF_PATH = '/var/vcap/packages/omsagent/etc/conf/omsagent.d/'
++PLUGIN_MODULE_PATH = '/var/vcap/packages/omsconfig/opt/modules/nxOMSPlugin/DSCResources/MSFT_nxOMSPluginResource/Plugins'
+ OMS_ACTION = OMSAgentUtil()
+ 
+ def init_vars(Plugins):
+diff --git a/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSSyslog.py b/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSSyslog.py
+index 493ed7f..401ef32 100644
+--- a/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSSyslog.py
++++ b/Providers/Scripts/2.6x-2.7x/Scripts/nxOMSSyslog.py
+@@ -16,8 +16,8 @@ rsyslog_conf_path = '/etc/rsyslog.conf'
+ rsyslog_inc_conf_path = '/etc/rsyslog.d/95-omsagent.conf'
+ syslog_ng_conf_path = '/etc/syslog-ng/syslog-ng.conf'
+ sysklog_conf_path='/etc/syslog.conf'
+-oms_syslog_ng_conf_path = '/etc/opt/omi/conf/omsconfig/syslog-ng-oms.conf'
+-oms_rsyslog_conf_path = '/etc/opt/omi/conf/omsconfig/rsyslog-oms.conf'
++oms_syslog_ng_conf_path = '/var/vcap/packages/omi/etc/conf/omsconfig/syslog-ng-oms.conf'
++oms_rsyslog_conf_path = '/var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf'
+ conf_path = ''
+ 
+ 
+@@ -193,7 +193,7 @@ def UpdateSyslogConf(SyslogSource):
+         LG().Log(
+             'ERROR', 'Unable to create omsagent rsyslog configuration at ' + conf_path + '.')
+         return False
+-    if os.system('sudo /opt/microsoft/omsconfig/Scripts/OMSRsyslog.post.sh ' + arg) == 0:
++    if os.system('sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSRsyslog.post.sh ' + arg) == 0:
+         LG().Log('INFO', 'Successfully executed OMSRsyslog.post.sh.')
+     else:
+         LG().Log('ERROR', 'Error executing OMSRsyslog.post.sh.')
+@@ -257,7 +257,7 @@ def UpdateSyslogNGConf(SyslogSource):
+         LG().Log(
+             'ERROR', 'Unable to create omsagent syslog-ng configuration at ' + conf_path + '.')
+         return False
+-    if os.system('sudo /opt/microsoft/omsconfig/Scripts/OMSSyslog-ng.post.sh') == 0:
++    if os.system('sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSSyslog-ng.post.sh') == 0:
+         LG().Log('INFO', 'Successfully executed OMSSyslog-ng.post.sh.')
+     else:
+         LG().Log('ERROR', 'Error executing OMSSyslog-ng.post.sh.')
+diff --git a/Providers/Scripts/2.6x-2.7x/Scripts/nxService.py b/Providers/Scripts/2.6x-2.7x/Scripts/nxService.py
+index ecdf3cc..b90d24a 100644
+--- a/Providers/Scripts/2.6x-2.7x/Scripts/nxService.py
++++ b/Providers/Scripts/2.6x-2.7x/Scripts/nxService.py
+@@ -1580,9 +1580,9 @@ def UpstartGetAll(sc):
+ def InitdGetAll(sc):
+     d={}
+     if helperlib.CONFIG_SYSCONFDIR_DSC == "omsconfig":
+-        initd_service_status = 'sudo /opt/microsoft/omsconfig/Scripts/OMSServiceStat.sh'
++        initd_service_status = 'sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSServiceStat.sh'
+         status_postfix = ''
+-        initd_service_status_all = 'sudo /opt/microsoft/omsconfig/Scripts/OMSServiceStatAll.sh'
++        initd_service_status_all = 'sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSServiceStatAll.sh'
+     else:
+         initd_service_status = initd_service
+         status_postfix = ' status'
+diff --git a/Providers/Scripts/3.x/Scripts/Tests/test_nxOMSPluginProvider.py b/Providers/Scripts/3.x/Scripts/Tests/test_nxOMSPluginProvider.py
+index 0799b37..3722acd 100644
+--- a/Providers/Scripts/3.x/Scripts/Tests/test_nxOMSPluginProvider.py
++++ b/Providers/Scripts/3.x/Scripts/Tests/test_nxOMSPluginProvider.py
+@@ -25,8 +25,8 @@ class nxOMSPluginTestCases(unittest2.TestCase):
+         Setup test resources
+         """
+         nxOMSPlugin.PLUGIN_MODULE_PATH = '/var/tmp/Plugins'
+-        nxOMSPlugin.PLUGIN_PATH = '/var/tmp/opt/microsoft/omsagent/plugin/'
+-        nxOMSPlugin.CONF_PATH = '/var/tmp/etc/opt/microsoft/omsagent/conf/omsagent.d/'
++        nxOMSPlugin.PLUGIN_PATH = '/var/tmp/var/vcap/packages/omsagent/opt/plugin/'
++        nxOMSPlugin.CONF_PATH = '/var/tmp/var/vcap/packages/omsagent/etc/conf/omsagent.d/'
+         nxOMSPlugin.OMS_ACTION = nxOMSPlugin.TestOMSAgent()
+         # remove files from directory
+         os.system('rm -rf /var/tmp/Plugins;' +
+diff --git a/Providers/Scripts/3.x/Scripts/Tests/test_nxProviders.py b/Providers/Scripts/3.x/Scripts/Tests/test_nxProviders.py
+index 946583f..d6166c6 100755
+--- a/Providers/Scripts/3.x/Scripts/Tests/test_nxProviders.py
++++ b/Providers/Scripts/3.x/Scripts/Tests/test_nxProviders.py
+@@ -3202,16 +3202,16 @@ class nxOMSSyslogTestCases(unittest2.TestCase):
+         """
+         if os.path.exists('/etc/rsyslog.d/95-omsagent.conf'):
+             os.system('cp /etc/rsyslog.d/95-omsagent.conf /etc/rsyslog.d/95-omsagent.conf.bak')
+-            os.system('cp /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf.bak')
++            os.system('cp /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf.bak')
+         elif os.path.exists('/etc/rsyslog.conf'):
+             os.system('cp /etc/rsyslog.conf /etc/rsyslog.conf.bak')
+-            os.system('cp /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf.bak')
++            os.system('cp /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf.bak')
+         elif os.path.exists('/etc/syslog.conf'):
+             os.system('cp /etc/syslog.conf /etc/syslog.conf.bak')
+-            os.system('cp /etc/opt/omi/conf/omsconfig/sysklog-oms.conf /etc/opt/omi/conf/omsconfig/sysklog-oms.conf.bak')
++            os.system('cp /var/vcap/packages/omi/etc/conf/omsconfig/sysklog-oms.conf /var/vcap/packages/omi/etc/conf/omsconfig/sysklog-oms.conf.bak')
+         elif os.path.exists('/etc/syslog-ng/syslog-ng.conf'):
+             os.system('cp /etc/syslog-ng/syslog-ng.conf /etc/syslog-ng/syslog-ng.conf.bak')
+-            os.system('cp /etc/opt/omi/conf/omsconfig/syslog-ng-oms.conf /etc/opt/omi/conf/omsconfig/syslog-ng-oms.conf.bak')            
++            os.system('cp /var/vcap/packages/omi/etc/conf/omsconfig/syslog-ng-oms.conf /var/vcap/packages/omi/etc/conf/omsconfig/syslog-ng-oms.conf.bak')            
+ 
+     def tearDown(self):
+         """
+@@ -3219,16 +3219,16 @@ class nxOMSSyslogTestCases(unittest2.TestCase):
+         """
+         if os.path.exists('/etc/rsyslog.d/95-omsagent.conf'):
+             os.system('mv /etc/rsyslog.d/95-omsagent.conf.bak /etc/rsyslog.d/95-omsagent.conf')
+-            os.system('mv /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf.bak /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf')
++            os.system('mv /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf.bak /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf')
+         elif os.path.exists('/etc/rsyslog.conf'):
+             os.system('mv /etc/rsyslog.conf.bak /etc/rsyslog.conf')
+-            os.system('mv /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf.bak /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf')
++            os.system('mv /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf.bak /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf')
+         elif os.path.exists('/etc/syslog.conf'):
+             os.system('mv /etc/syslog.conf.bak /etc/syslog.conf')
+-            os.system('mv /etc/opt/omi/conf/omsconfig/sysklog-oms.conf.bak /etc/opt/omi/conf/omsconfig/sysklog-oms.conf')
++            os.system('mv /var/vcap/packages/omi/etc/conf/omsconfig/sysklog-oms.conf.bak /var/vcap/packages/omi/etc/conf/omsconfig/sysklog-oms.conf')
+         elif os.path.exists('/etc/syslog-ng/syslog-ng.conf'):
+             os.system('mv /etc/syslog-ng/syslog-ng.conf.bak /etc/syslog-ng/syslog-ng.conf')
+-            os.system('mv /etc/opt/omi/conf/omsconfig/syslog-ng-oms.conf.bak /etc/opt/omi/conf/omsconfig/syslog-ng-oms.conf')            
++            os.system('mv /var/vcap/packages/omi/etc/conf/omsconfig/syslog-ng-oms.conf.bak /var/vcap/packages/omi/etc/conf/omsconfig/syslog-ng-oms.conf')            
+         
+     def make_MI(self,retval,SyslogSource):
+         d=dict()
+@@ -3304,13 +3304,13 @@ class nxOMSAgentTestCases(unittest2.TestCase):
+         """
+         Setup test resources
+         """
+-        os.system('cp /etc/opt/microsoft/omsagent/conf/omsagent.conf /etc/opt/microsoft/omsagent/conf/omsagent.conf.bak')
++        os.system('cp /var/vcap/packages/omsagent/etc/conf/omsagent.conf /var/vcap/packages/omsagent/etc/conf/omsagent.conf.bak')
+ 
+     def tearDown(self):
+         """
+         Remove test resources.
+         """
+-        os.system('mv /etc/opt/microsoft/omsagent/conf/omsagent.conf.bak /etc/opt/microsoft/omsagent/conf/omsagent.conf')            
++        os.system('mv /var/vcap/packages/omsagent/etc/conf/omsagent.conf.bak /var/vcap/packages/omsagent/etc/conf/omsagent.conf')            
+ 
+         
+     def make_MI(self,retval,HeartbeatIntervalSeconds, PerfObject):
+@@ -3397,7 +3397,7 @@ class nxOMSAgentTestCases(unittest2.TestCase):
+         'Get('+repr(g)+' should return ==['+repr(m)+']')
+ 
+     def testSetOMSAgent_add_missing_conf_file(self):
+-        os.system('rm /etc/opt/microsoft/omsagent/conf/omsagent.conf')
++        os.system('rm /var/vcap/packages/omsagent/etc/conf/omsagent.conf')
+         d={'HeartbeatIntervalSeconds':600,'PerfObject':[{'InstanceName':'*', 'IntervalSeconds':600, 'AllInstances':True,
+             'PerformanceCounter':['FreeMegabytes','PercentFreeSpace','PercentUsedSpace','PercentFreeInodes',
+             'PercentUsedInodes','BytesPerSecond','ReadBytesPerSecond','WriteBytesPerSecond'],
+@@ -3413,7 +3413,7 @@ class nxOMSAgentTestCases(unittest2.TestCase):
+         self.assertTrue(nxOMSAgent.Set_Marshall(**d) == [0],'Set('+repr(d)+') should return == [0]') 
+ 
+     def testSetGetOMSAgent_add_missing_conf_file(self):
+-        os.system('rm /etc/opt/microsoft/omsagent/conf/omsagent.conf')
++        os.system('rm /var/vcap/packages/omsagent/etc/conf/omsagent.conf')
+         d={'HeartbeatIntervalSeconds':600,'PerfObject':[{'InstanceName':'*', 'IntervalSeconds':600, 'AllInstances':True,
+             'PerformanceCounter':['FreeMegabytes','PercentFreeSpace','PercentUsedSpace','PercentFreeInodes',
+             'PercentUsedInodes','BytesPerSecond','ReadBytesPerSecond','WriteBytesPerSecond'],
+@@ -3440,7 +3440,7 @@ class nxOMSAgentTestCases(unittest2.TestCase):
+         'Get '+repr(g)+' should return == '+repr(m)+'')
+ 
+     def testGetOMSAgent_add_missing_conf_file(self):
+-        os.system('rm /etc/opt/microsoft/omsagent/conf/omsagent.conf')
++        os.system('rm /var/vcap/packages/omsagent/etc/conf/omsagent.conf')
+         d={'HeartbeatIntervalSeconds':600,'PerfObject':[{'InstanceName':'*', 'IntervalSeconds':600, 'AllInstances':True,
+             'PerformanceCounter':['FreeMegabytes','PercentFreeSpace','PercentUsedSpace','PercentFreeInodes',
+             'PercentUsedInodes','BytesPerSecond','ReadBytesPerSecond','WriteBytesPerSecond'],
+@@ -3460,7 +3460,7 @@ class nxOMSAgentTestCases(unittest2.TestCase):
+         'Get '+repr(g)+' should return == '+repr(m)+'')
+ 
+     def testTestOMSAgent_add_missing_conf_file(self):
+-        os.system('rm /etc/opt/microsoft/omsagent/conf/omsagent.conf')
++        os.system('rm /var/vcap/packages/omsagent/etc/conf/omsagent.conf')
+         d={'HeartbeatIntervalSeconds':600,'PerfObject':[{'InstanceName':'*', 'IntervalSeconds':600, 'AllInstances':True,
+             'PerformanceCounter':['FreeMegabytes','PercentFreeSpace','PercentUsedSpace','PercentFreeInodes',
+             'PercentUsedInodes','BytesPerSecond','ReadBytesPerSecond','WriteBytesPerSecond'],
+@@ -3690,7 +3690,7 @@ class nxOMSKeyMgmtTestCases(unittest2.TestCase):
+         sig_txt = (open('./Scripts/Tests/test_mofs/testdsckey.asc','r').read())
+         cls.keymgmt = {'KeyContents': key_txt, \
+                        'KeySignature': sig_txt, 'Ensure':'present'}
+-        cls.conf_dir = '/etc/opt/omi/conf/omsconfig'
++        cls.conf_dir = '/var/vcap/packages/omi/etc/conf/omsconfig'
+         if not os.path.exists(cls.conf_dir):
+             os.system('mkdir -p ' + cls.conf_dir + ' 2>&1 >/dev/null')
+         os.system('cp ' + nxOMSKeyMgmt.signature_keyring_path + ' ' + \
+diff --git a/Providers/Scripts/3.x/Scripts/nxAvailableUpdates.py b/Providers/Scripts/3.x/Scripts/nxAvailableUpdates.py
+index 43ab1af..4019fe6 100644
+--- a/Providers/Scripts/3.x/Scripts/nxAvailableUpdates.py
++++ b/Providers/Scripts/3.x/Scripts/nxAvailableUpdates.py
+@@ -66,7 +66,7 @@ def GetAptUpdates(Name):
+     d={}
+     # Refresh the repo
+     if helperlib.CONFIG_SYSCONFDIR_DSC == "omsconfig":
+-        cmd = 'sudo /opt/microsoft/omsconfig/Scripts/OMSAptUpdates.sh'
++        cmd = 'sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSAptUpdates.sh'
+     else:
+         cmd = 'apt-get -q update'
+     code, out = RunGetOutput(cmd, False, False)
+@@ -114,7 +114,7 @@ def GetYumUpdates(Name):
+         srch_str=r'Name.*?: (.*?)\n.*?Arch.*?: (.*?)\n.*?Version.*?: (.*?)\n.*?Release.*?: (.*?)\n.*?Repo.*?: (.*?)\n'
+         
+     if helperlib.CONFIG_SYSCONFDIR_DSC == "omsconfig":
+-        yum_list = 'sudo /opt/microsoft/omsconfig/Scripts/OMSYumUpdates.sh '
++        yum_list = 'sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSYumUpdates.sh '
+         yum_info = yum_list
+     else:
+         yum_list = 'yum check-update '
+@@ -172,7 +172,7 @@ def GetZypperUpdates(Name):
+     pkg_list = ''
+     # For omsagent the repo is refreshed in OMSZypperUpdates.sh.
+     if helperlib.CONFIG_SYSCONFDIR_DSC == "omsconfig":
+-        zypper = 'sudo /opt/microsoft/omsconfig/Scripts/OMSZypperUpdates.sh'
++        zypper = 'sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSZypperUpdates.sh'
+     else:
+         zypper = 'zypper -q lu'
+         # Refresh the repo.
+diff --git a/Providers/Scripts/3.x/Scripts/nxOMSAgent.py b/Providers/Scripts/3.x/Scripts/nxOMSAgent.py
+index fb84df9..13d5ec7 100644
+--- a/Providers/Scripts/3.x/Scripts/nxOMSAgent.py
++++ b/Providers/Scripts/3.x/Scripts/nxOMSAgent.py
+@@ -14,7 +14,7 @@ nxDSCLog = imp.load_source('nxDSCLog', '../nxDSCLog.py')
+ 
+ LG = nxDSCLog.DSCLog
+ 
+-conf_path = '/etc/opt/microsoft/omsagent/conf/omsagent.conf'
++conf_path = '/var/vcap/packages/omsagent/etc/conf/omsagent.conf'
+ omi_map = None
+ 
+ 
+@@ -168,7 +168,7 @@ def UpdateOMSAgentConf(HeartbeatIntervalSeconds, PerfObject):
+         txt = ''
+     heartbeat_srch_str = r'<source>.*?tag heartbeat.*?</source>\n'
+     heartbeat_srch = re.compile(heartbeat_srch_str, re.M | re.S)
+-    heartbeat_src = '<source>\n  type exec\n  tag heartbeat.output\n  command /opt/microsoft/omsagent/bin/omsadmin.sh -b > /dev/null\n  format tsv\n  keys severity,message\n  run_interval ' + \
++    heartbeat_src = '<source>\n  type exec\n  tag heartbeat.output\n  command /var/vcap/packages/omsagent/opt/bin/omsadmin.sh -b > /dev/null\n  format tsv\n  keys severity,message\n  run_interval ' + \
+         str(HeartbeatIntervalSeconds) + 's\n</source>\n'
+     txt = heartbeat_srch.sub(heartbeat_src, txt)
+     d = {}
+@@ -200,7 +200,7 @@ def UpdateOMSAgentConf(HeartbeatIntervalSeconds, PerfObject):
+         LG().Log(
+             'ERROR', 'Unable to create omsagent configuration at ' + conf_path + '.')
+         return False
+-    if os.system('sudo /opt/microsoft/omsagent/bin/service_control restart') == 0:
++    if os.system('sudo /var/vcap/packages/omsagent/opt/bin/service_control restart') == 0:
+         LG().Log('INFO', 'Successfully restarted omsagent.')
+     else:
+         LG().Log('ERROR', 'Error restarting omsagent.')
+@@ -225,7 +225,7 @@ def rm_unicode(obj):
+ def init_omi_map():
+     global omi_map
+     txt = codecs.open(
+-        '/etc/opt/microsoft/omsagent/sysconf/omi_mapping.json', 'r', 'utf8').read()
++        '/var/vcap/packages/omsagent/etc/sysconf/omi_mapping.json', 'r', 'utf8').read()
+     omi_map = json.loads(txt)
+ 
+ 
+diff --git a/Providers/Scripts/3.x/Scripts/nxOMSCustomLog.py b/Providers/Scripts/3.x/Scripts/nxOMSCustomLog.py
+index 81f6941..dc94dcf 100644
+--- a/Providers/Scripts/3.x/Scripts/nxOMSCustomLog.py
++++ b/Providers/Scripts/3.x/Scripts/nxOMSCustomLog.py
+@@ -15,7 +15,7 @@ nxDSCLog = imp.load_source('nxDSCLog', '../nxDSCLog.py')
+ 
+ LG = nxDSCLog.DSCLog
+ 
+-conf_path = '/etc/opt/microsoft/omsagent/conf/omsagent.d/customlog.conf'
++conf_path = '/var/vcap/packages/omsagent/etc/conf/omsagent.d/customlog.conf'
+ 
+ def init_vars(CustomLogObjects):
+     new_customlogs = []
+@@ -100,7 +100,7 @@ def ReadConf():
+     if not os.path.isfile(conf_path):
+         return [];
+     txt = codecs.open(conf_path, 'r', 'utf8').read()
+-    customlog_src_srch_str=r'\n<source>\n  type tail.*?path (.*?)\n.*?pos_file /var/opt/microsoft/omsagent/state/(.*?)\.pos.*?tag oms\.blob\.CustomLog\.(.*?)\.\*.*?format none.*?</source>\n'
++    customlog_src_srch_str=r'\n<source>\n  type tail.*?path (.*?)\n.*?pos_file /var/vcap/packages/omsagent/var/state/(.*?)\.pos.*?tag oms\.blob\.CustomLog\.(.*?)\.\*.*?format none.*?</source>\n'
+     customlog_src_srch=re.compile(customlog_src_srch_str,re.M|re.S)
+     new_customlogs=[]
+     sources=customlog_src_srch.findall(txt)
+@@ -120,9 +120,9 @@ def UpdateConf(CustomLogObjects):
+         for customlog in CustomLogObjects:
+             logname = customlog['LogName']
+             filepaths = ','.join(customlog['FilePath'])
+-            new_source+='\n<source>\n  type tail\n  path ' + filepaths + '\n  pos_file /var/opt/microsoft/omsagent/state/' + logname + '.pos\n  read_from_head true\n  tag oms.blob.CustomLog.' + logname + '.*\n  format none\n</source>\n'
++            new_source+='\n<source>\n  type tail\n  path ' + filepaths + '\n  pos_file /var/vcap/packages/omsagent/var/state/' + logname + '.pos\n  read_from_head true\n  tag oms.blob.CustomLog.' + logname + '.*\n  format none\n</source>\n'
+     txt = header + new_source
+     if os.path.isfile(conf_path): 
+         shutil.copy2(conf_path, conf_path + '.bak')
+     codecs.open(conf_path, 'w', 'utf8').write(txt)
+-    os.system('sudo /opt/microsoft/omsagent/bin/service_control restart')
++    os.system('sudo /var/vcap/packages/omsagent/opt/bin/service_control restart')
+diff --git a/Providers/Scripts/3.x/Scripts/nxOMSGenerateInventoryMof.py b/Providers/Scripts/3.x/Scripts/nxOMSGenerateInventoryMof.py
+index 7508754..8512bfb 100644
+--- a/Providers/Scripts/3.x/Scripts/nxOMSGenerateInventoryMof.py
++++ b/Providers/Scripts/3.x/Scripts/nxOMSGenerateInventoryMof.py
+@@ -16,8 +16,8 @@ nxDSCLog = imp.load_source('nxDSCLog', '../nxDSCLog.py')
+ 
+ LG = nxDSCLog.DSCLog
+ 
+-inventoryMof_path = '/etc/opt/microsoft/omsagent/conf/omsagent.d/'
+-outputxml_path = '/etc/opt/omi/conf/omsconfig/configuration/'
++inventoryMof_path = '/var/vcap/packages/omsagent/etc/conf/omsagent.d/'
++outputxml_path = '/var/vcap/packages/omi/etc/conf/omsconfig/configuration/'
+ 
+ def init_vars(Instances):
+     new_instances = []
+@@ -137,7 +137,7 @@ def GenerateInventoyConfContents(FeatureName, Instances, RunIntervalInSeconds, T
+ <source> \n \
+   type exec \n \
+   tag ' + Tag + ' \n \
+-  command /opt/microsoft/omsconfig/Scripts/PerformInventory.py --InMOF ' + mof_file_path + ' --OutXML ' + outputxml_path + FeatureName + '.xml > /dev/null && cat ' + outputxml_path + FeatureName + '.xml \n \
++  command /var/vcap/packages/omsconfig/opt/Scripts/PerformInventory.py --InMOF ' + mof_file_path + ' --OutXML ' + outputxml_path + FeatureName + '.xml > /dev/null && cat ' + outputxml_path + FeatureName + '.xml \n \
+   format '+ Format + '\n \
+   keys xml \n \
+   run_interval ' + str(RunIntervalInSeconds) + 's \n \
+@@ -199,7 +199,7 @@ def GenerateInventoyMOF(FeatureName, Instances, RunIntervalInSeconds, Tag, Forma
+ 
+     codecs.open(conf_file_path, 'w', 'utf8').write(conf_file_contents)
+ 
+-    os.system('sudo /opt/microsoft/omsagent/bin/service_control restart')
++    os.system('sudo /var/vcap/packages/omsagent/opt/bin/service_control restart')
+ 
+ 
+ def GetFileChecksum(FilePath):
+diff --git a/Providers/Scripts/3.x/Scripts/nxOMSKeyMgmt.py b/Providers/Scripts/3.x/Scripts/nxOMSKeyMgmt.py
+index bf2ea21..fd0c854 100755
+--- a/Providers/Scripts/3.x/Scripts/nxOMSKeyMgmt.py
++++ b/Providers/Scripts/3.x/Scripts/nxOMSKeyMgmt.py
+@@ -22,8 +22,8 @@ nxDSCLog = imp.load_source('nxDSCLog', '../nxDSCLog.py')
+ 
+ LG = nxDSCLog.DSCLog
+ 
+-dsc_keyring_path = '/etc/opt/omi/conf/omsconfig/keyring.gpg'
+-signature_keyring_path = '/etc/opt/omi/conf/omsconfig/keymgmtring.gpg'
++dsc_keyring_path = '/var/vcap/packages/omi/etc/conf/omsconfig/keyring.gpg'
++signature_keyring_path = '/var/vcap/packages/omi/etc/conf/omsconfig/keymgmtring.gpg'
+ gpg_bin = '/usr/bin/gpg'
+ tmpdir = '/tmp/omsmgmt'
+ key_contents_path = tmpdir + '/' + 'tmpkey.pub'
+@@ -110,7 +110,7 @@ def Set(KeyContents, KeySignature, Ensure):
+             F.write(KeyContents)
+             F.close()
+     # Verify the signature.
+-    cmd = 'HOME=/var/opt/microsoft/omsagent/run ' + gpg_bin + ' --no-default-keyring --keyring ' \
++    cmd = 'HOME=/var/vcap/sys/run/omsagent ' + gpg_bin + ' --no-default-keyring --keyring ' \
+         + signature_keyring_path + ' --verify ' + \
+         key_signature_path + ' ' + key_contents_path
+     code, out = RunGetOutput(cmd, False, False)
+@@ -122,7 +122,7 @@ def Set(KeyContents, KeySignature, Ensure):
+         return [-1]
+     if Ensure == 'absent':
+         # Get the id so we can remove the key.
+-        cmd = 'HOME=/var/opt/microsoft/omsagent/run ' + gpg_bin + ' --dry-run --no-default-keyring --keyring ' \
++        cmd = 'HOME=/var/vcap/sys/run/omsagent ' + gpg_bin + ' --dry-run --no-default-keyring --keyring ' \
+             + dsc_keyring_path + ' --import ' + key_contents_path
+         code, out = RunGetOutput(cmd, False, False)
+         r = re.search(r'.*?key (.*?):.*?not changed', out)
+@@ -134,7 +134,7 @@ def Set(KeyContents, KeySignature, Ensure):
+             cleanup()
+             return [-1]
+         # We must use the fingerprint in batch mode to prevent interactive questions
+-        cmd = 'HOME=/var/opt/microsoft/omsagent/run ' + gpg_bin + ' --batch --yes --no-default-keyring --keyring ' \
++        cmd = 'HOME=/var/vcap/sys/run/omsagent ' + gpg_bin + ' --batch --yes --no-default-keyring --keyring ' \
+             + dsc_keyring_path + ' --fingerprint ' + key_id
+         code, out = RunGetOutput(cmd, False, False)
+         r = re.search(r'.*?fingerprint = (.*?)\n', out)
+@@ -147,7 +147,7 @@ def Set(KeyContents, KeySignature, Ensure):
+             cleanup()
+             return [-1]
+         # Delete the key.
+-        cmd = 'HOME=/var/opt/microsoft/omsagent/run ' + gpg_bin + ' --batch --yes --no-default-keyring --keyring ' \
++        cmd = 'HOME=/var/vcap/sys/run/omsagent ' + gpg_bin + ' --batch --yes --no-default-keyring --keyring ' \
+             + dsc_keyring_path + ' --delete-secret-and-public-key "' + key_fingerprint + '"'
+         code, out = RunGetOutput(cmd, False, False)
+         if code != 0:
+@@ -157,7 +157,7 @@ def Set(KeyContents, KeySignature, Ensure):
+             return [-1]
+     else:
+         # Add the key.
+-        cmd = 'HOME=/var/opt/microsoft/omsagent/run ' + gpg_bin + ' --no-default-keyring --keyring ' \
++        cmd = 'HOME=/var/vcap/sys/run/omsagent ' + gpg_bin + ' --no-default-keyring --keyring ' \
+             + dsc_keyring_path + ' --import ' + key_contents_path
+         code, out = RunGetOutput(cmd, False, False)
+     if code != 0:
+@@ -186,7 +186,7 @@ def Test(KeyContents, KeySignature, Ensure):
+         else:
+             F.write(KeyContents)
+             F.close()
+-    cmd = 'HOME=/var/opt/microsoft/omsagent/run ' + gpg_bin + ' --dry-run --options /dev/null --no-default-keyring --keyring ' \
++    cmd = 'HOME=/var/vcap/sys/run/omsagent ' + gpg_bin + ' --dry-run --options /dev/null --no-default-keyring --keyring ' \
+         + dsc_keyring_path + ' --import ' + key_contents_path
+     code, out = RunGetOutput(cmd, False, False)
+     if code != 0:
+diff --git a/Providers/Scripts/3.x/Scripts/nxOMSPlugin.py b/Providers/Scripts/3.x/Scripts/nxOMSPlugin.py
+index ef0a71c..43733bd 100644
+--- a/Providers/Scripts/3.x/Scripts/nxOMSPlugin.py
++++ b/Providers/Scripts/3.x/Scripts/nxOMSPlugin.py
+@@ -45,7 +45,7 @@ class IOMSAgent:
+     
+ class OMSAgentUtil(IOMSAgent):
+     def restart_oms_agent(self):
+-        if os.system('sudo /opt/microsoft/omsagent/bin/service_control restart') == 0:
++        if os.system('sudo /var/vcap/packages/omsagent/opt/bin/service_control restart') == 0:
+             return True
+         else:
+             LG().Log('ERROR', 'Error restarting omsagent.')
+@@ -55,9 +55,9 @@ class TestOMSAgent(IOMSAgent):
+     def restart_oms_agent(self):
+         return True
+         
+-PLUGIN_PATH = '/opt/microsoft/omsagent/plugin/'
+-CONF_PATH = '/etc/opt/microsoft/omsagent/conf/omsagent.d/'
+-PLUGIN_MODULE_PATH = '/opt/microsoft/omsconfig/modules/nxOMSPlugin/DSCResources/MSFT_nxOMSPluginResource/Plugins'
++PLUGIN_PATH = '/var/vcap/packages/omsagent/opt/plugin/'
++CONF_PATH = '/var/vcap/packages/omsagent/etc/conf/omsagent.d/'
++PLUGIN_MODULE_PATH = '/var/vcap/packages/omsconfig/opt/modules/nxOMSPlugin/DSCResources/MSFT_nxOMSPluginResource/Plugins'
+ OMS_ACTION = OMSAgentUtil()
+ 
+ def init_vars(Plugins):
+diff --git a/Providers/Scripts/3.x/Scripts/nxOMSSyslog.py b/Providers/Scripts/3.x/Scripts/nxOMSSyslog.py
+index b5d15c9..b8d9749 100644
+--- a/Providers/Scripts/3.x/Scripts/nxOMSSyslog.py
++++ b/Providers/Scripts/3.x/Scripts/nxOMSSyslog.py
+@@ -17,8 +17,8 @@ rsyslog_conf_path = '/etc/rsyslog.conf'
+ rsyslog_inc_conf_path = '/etc/rsyslog.d/95-omsagent.conf'
+ syslog_ng_conf_path = '/etc/syslog-ng/syslog-ng.conf'
+ sysklog_conf_path='/etc/syslog.conf'
+-oms_syslog_ng_conf_path = '/etc/opt/omi/conf/omsconfig/syslog-ng-oms.conf'
+-oms_rsyslog_conf_path = '/etc/opt/omi/conf/omsconfig/rsyslog-oms.conf'
++oms_syslog_ng_conf_path = '/var/vcap/packages/omi/etc/conf/omsconfig/syslog-ng-oms.conf'
++oms_rsyslog_conf_path = '/var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf'
+ conf_path = ''
+ 
+ 
+@@ -191,7 +191,7 @@ def UpdateSyslogConf(SyslogSource):
+         LG().Log(
+             'ERROR', 'Unable to create omsagent rsyslog configuration at ' + conf_path + '.')
+         return False
+-    if os.system('sudo /opt/microsoft/omsconfig/Scripts/OMSRsyslog.post.sh ' + arg) == 0:
++    if os.system('sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSRsyslog.post.sh ' + arg) == 0:
+         LG().Log('INFO', 'Successfully executed OMSRsyslog.post.sh.')
+     else:
+         LG().Log('ERROR', 'Error executing OMSRsyslog.post.sh.')
+@@ -254,7 +254,7 @@ def UpdateSyslogNGConf(SyslogSource):
+         LG().Log(
+             'ERROR', 'Unable to create omsagent syslog-ng configuration at ' + conf_path + '.')
+         return False
+-    if os.system('sudo /opt/microsoft/omsconfig/Scripts/OMSSyslog-ng.post.sh') == 0:
++    if os.system('sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSSyslog-ng.post.sh') == 0:
+         LG().Log('INFO', 'Successfully executed OMSSyslog-ng.post.sh.')
+     else:
+         LG().Log('ERROR', 'Error executing OMSSyslog-ng.post.sh.')
+diff --git a/Providers/Scripts/3.x/Scripts/nxService.py b/Providers/Scripts/3.x/Scripts/nxService.py
+index eb6895d..43b9f0c 100644
+--- a/Providers/Scripts/3.x/Scripts/nxService.py
++++ b/Providers/Scripts/3.x/Scripts/nxService.py
+@@ -1576,9 +1576,9 @@ def UpstartGetAll(sc):
+ def InitdGetAll(sc):
+     d={}
+     if helperlib.CONFIG_SYSCONFDIR_DSC == "omsconfig":
+-        initd_service_status = 'sudo /opt/microsoft/omsconfig/Scripts/OMSServiceStat.sh'
++        initd_service_status = 'sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSServiceStat.sh'
+         status_postfix = ''
+-        initd_service_status_all = 'sudo /opt/microsoft/omsconfig/Scripts/OMSServiceStatAll.sh'
++        initd_service_status_all = 'sudo /var/vcap/packages/omsconfig/opt/Scripts/OMSServiceStatAll.sh'
+     else:
+         initd_service_status = initd_service
+         status_postfix = ' status'
+diff --git a/Providers/Scripts/OMSRsyslog.post.sh b/Providers/Scripts/OMSRsyslog.post.sh
+index 1f85794..3b6924b 100644
+--- a/Providers/Scripts/OMSRsyslog.post.sh
++++ b/Providers/Scripts/OMSRsyslog.post.sh
+@@ -1,10 +1,10 @@
+ #!/bin/bash
+ if [ "$1" = "1" ]; then
+     if [ ! -d /etc/rsylog.d ]; then 
+-        cp --force /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf /etc/rsyslog.conf
++        cp --force /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf /etc/rsyslog.conf
+     fi
+ else
+-    cp --force /etc/opt/omi/conf/omsconfig/rsyslog-oms.conf /etc/rsyslog.d/95-omsagent.conf
++    cp --force /var/vcap/packages/omi/etc/conf/omsconfig/rsyslog-oms.conf /etc/rsyslog.d/95-omsagent.conf
+ fi
+ service rsyslog restart
+ 
+diff --git a/Providers/Scripts/OMSSysklog.post.sh b/Providers/Scripts/OMSSysklog.post.sh
+index 6d1b230..feaa33c 100644
+--- a/Providers/Scripts/OMSSysklog.post.sh
++++ b/Providers/Scripts/OMSSysklog.post.sh
+@@ -1,3 +1,3 @@
+ #!/bin/bash
+-cp --force /etc/opt/omi/conf/omsconfig/sysklog-oms.conf /etc/syslog.conf
++cp --force /var/vcap/packages/omi/etc/conf/omsconfig/sysklog-oms.conf /etc/syslog.conf
+ service syslog restart
+diff --git a/Providers/Scripts/OMSSyslog-ng.post.sh b/Providers/Scripts/OMSSyslog-ng.post.sh
+index 47b990d..6e8dda1 100644
+--- a/Providers/Scripts/OMSSyslog-ng.post.sh
++++ b/Providers/Scripts/OMSSyslog-ng.post.sh
+@@ -1,3 +1,3 @@
+ #!/bin/bash
+-cp --force /etc/opt/omi/conf/omsconfig/syslog-ng-oms.conf /etc/syslog-ng/syslog-ng.conf
++cp --force /var/vcap/packages/omi/etc/conf/omsconfig/syslog-ng-oms.conf /etc/syslog-ng/syslog-ng.conf
+ service syslog restart
+diff --git a/Providers/Scripts/nxDSCLog.py b/Providers/Scripts/nxDSCLog.py
+index c12fc76..36e8efe 100644
+--- a/Providers/Scripts/nxDSCLog.py
++++ b/Providers/Scripts/nxDSCLog.py
+@@ -38,7 +38,7 @@ class DSCLog(object):
+         self.current_level = self.GetCurrentLogLevel()
+         LogFile = VarDir + "/log/dsc.log"
+         if helperlib.CONFIG_SYSCONFDIR_DSC == "omsconfig":
+-            LogFile = "/var/opt/microsoft/omsconfig/omsconfig.log"
++            LogFile = "/var/vcap/packages/omsconfig/var/omsconfig.log"
+         else:
+             os.system('mkdir -p ' + VarDir + '/log')
+         self.file_path = LogFile
+diff --git a/configure b/configure
+index 77b7677..1030d31 100755
+--- a/configure
++++ b/configure
+@@ -60,8 +60,8 @@ do
+ 		exit 1
+ 	    fi
+ 	    BUILD_OMS=BUILD_OMS
+-	    DSC_MODULES_PATH="/opt/microsoft/omsconfig/modules"
+-	    DSC_SCRIPT_PATH="/opt/microsoft/omsconfig/Scripts"
++	    DSC_MODULES_PATH="/var/vcap/packages/omsconfig/opt/modules"
++	    DSC_SCRIPT_PATH="/var/vcap/packages/omsconfig/opt/Scripts"
+ 	    DSC_PATH_MODIFIER="/omsconfig"
+ 	    ;;
+ 	
+diff --git a/installbuilder/Makefile b/installbuilder/Makefile
+index 45c2f39..02d253d 100644
+--- a/installbuilder/Makefile
++++ b/installbuilder/Makefile
+@@ -17,7 +17,7 @@ endif
+ CONFIG_VERSION := 1.1.1
+ 
+ ifeq ($(BUILD_OMS_VAL),1)
+-SHORT_NAME=omsconfig
++SHORT_NAME=omsconfig-bosh
+ LONG_NAME=Operations Management Suite Agent Configuration
+ PROVIDES=dscpkg
+ PROVIDERS=
+@@ -70,7 +70,7 @@ endif
+ ifeq ($(BUILD_DPKG),1)
+ 	@echo "========================= Make DSC installer"
+ ifeq ($(BUILD_OMS_VAL),1)
+-	egrep -q "^omsagent:" /etc/passwd; if [ $$? -ne 0 ]; then echo "Creating omsagent user ..."; sudo /usr/sbin/useradd -r -c "OMS agent" -d /var/opt/microsoft/omsagent/run -s /bin/bash omsagent; fi
++	egrep -q "^omsagent:" /etc/passwd; if [ $$? -ne 0 ]; then echo "Creating omsagent user ..."; sudo /usr/sbin/useradd -r -c "OMS agent" -d /var/vcap/sys/run/omsagent -s /bin/bash omsagent; fi
+ endif
+ 	sudo rm -rf $(STAGING_DIR) $(INTERMEDIATE_DIR) 
+ 	mkdir -p $(RELEASE_DIR) $(STAGING_DIR) $(INTERMEDIATE_DIR)
+diff --git a/installbuilder/datafiles/Base_DSC.data b/installbuilder/datafiles/Base_DSC.data
+index eb841f2..77b983f 100644
+--- a/installbuilder/datafiles/Base_DSC.data
++++ b/installbuilder/datafiles/Base_DSC.data
+@@ -9,110 +9,111 @@ COPYRIGHT_FILE: 'Copyright Microsoft'
+ SHLIB_EXT: 'so'
+ 
+ %Files
+-/opt/microsoft/${{SHORT_NAME}}/mof/OMI_BaseResourceUE.mof; LCM/dsc/mof/OMI_BaseResourceUE.mof; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/mof/MSFT_DSCMetaConfiguration.mof; LCM/dsc/mof/MSFT_DSCMetaConfiguration.mof; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/mof/MSFT_LogResource.registration.mof; LCM/dsc/mof/MSFT_LogResource.registration.mof; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/mof/MSFT_LogResource.schema.mof; LCM/dsc/mof/MSFT_LogResource.schema.mof; 755; ${{RUN_AS_USER}}; root
+-
+-/etc/opt/omi/conf/${{SHORT_NAME}}/dsc.conf; Providers/Extras/Scripts/base_dsc.conf; 755; ${{RUN_AS_USER}}; root
+-
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/client.py; intermediate/Scripts/client.py; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/protocol.py; intermediate/Scripts/protocol.py; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/nxDSCLog.py; intermediate/Scripts/nxDSCLog.py; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/zipfile2.6.py; intermediate/Scripts/zipfile2.6.py; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/StartDscConfiguration.py; intermediate/Scripts/StartDscConfiguration.py; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/TestDscConfiguration.py; intermediate/Scripts/TestDscConfiguration.py; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/GetDscConfiguration.py; intermediate/Scripts/GetDscConfiguration.py; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/PerformInventory.py; intermediate/Scripts/PerformInventory.py; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/SetDscLocalConfigurationManager.py; intermediate/Scripts/SetDscLocalConfigurationManager.py; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/GetDscLocalConfigurationManager.py; intermediate/Scripts/GetDscLocalConfigurationManager.py; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/PerformRequiredConfigurationChecks.py; intermediate/Scripts/PerformRequiredConfigurationChecks.py; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/RestoreConfiguration.py; intermediate/Scripts/RestoreConfiguration.py; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/InstallModule.py; intermediate/Scripts/InstallModule.py; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/RemoveModule.py; intermediate/Scripts/RemoveModule.py; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/RegenerateInitFiles.py; intermediate/Scripts/RegenerateInitFiles.py; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/RegisterHelper.sh; intermediate/Scripts/RegisterHelper.sh; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/Register.py; intermediate/Scripts/Register.py; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/StatusReport.sh; intermediate/Scripts/StatusReport.sh; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/helperlib.py; intermediate/Scripts/helperlib.py; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/ImportGPGKey.sh; intermediate/Scripts/ImportGPGKey.sh; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/mof/OMI_BaseResourceUE.mof; LCM/dsc/mof/OMI_BaseResourceUE.mof; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/mof/MSFT_DSCMetaConfiguration.mof; LCM/dsc/mof/MSFT_DSCMetaConfiguration.mof; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/mof/MSFT_LogResource.registration.mof; LCM/dsc/mof/MSFT_LogResource.registration.mof; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/mof/MSFT_LogResource.schema.mof; LCM/dsc/mof/MSFT_LogResource.schema.mof; 755; ${{RUN_AS_USER}}; root
++
++/var/vcap/packages/omi/etc/conf/omsconfig/dsc.conf; Providers/Extras/Scripts/base_dsc.conf; 755; ${{RUN_AS_USER}}; root
++
++/var/vcap/packages/omsconfig/opt/Scripts/client.py; intermediate/Scripts/client.py; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/protocol.py; intermediate/Scripts/protocol.py; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/nxDSCLog.py; intermediate/Scripts/nxDSCLog.py; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/zipfile2.6.py; intermediate/Scripts/zipfile2.6.py; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/StartDscConfiguration.py; intermediate/Scripts/StartDscConfiguration.py; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/TestDscConfiguration.py; intermediate/Scripts/TestDscConfiguration.py; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/GetDscConfiguration.py; intermediate/Scripts/GetDscConfiguration.py; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/PerformInventory.py; intermediate/Scripts/PerformInventory.py; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/SetDscLocalConfigurationManager.py; intermediate/Scripts/SetDscLocalConfigurationManager.py; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/GetDscLocalConfigurationManager.py; intermediate/Scripts/GetDscLocalConfigurationManager.py; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/PerformRequiredConfigurationChecks.py; intermediate/Scripts/PerformRequiredConfigurationChecks.py; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/RestoreConfiguration.py; intermediate/Scripts/RestoreConfiguration.py; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/InstallModule.py; intermediate/Scripts/InstallModule.py; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/RemoveModule.py; intermediate/Scripts/RemoveModule.py; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/RegenerateInitFiles.py; intermediate/Scripts/RegenerateInitFiles.py; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/RegisterHelper.sh; intermediate/Scripts/RegisterHelper.sh; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/Register.py; intermediate/Scripts/Register.py; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/StatusReport.sh; intermediate/Scripts/StatusReport.sh; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/helperlib.py; intermediate/Scripts/helperlib.py; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/ImportGPGKey.sh; intermediate/Scripts/ImportGPGKey.sh; 755; ${{RUN_AS_USER}}; root
+ 
+ #if BUILD_OMS == 1
+ 
+-/opt/microsoft/omsconfig/etc/logrotate.conf; Providers/Extras/Scripts/omsconfig_logrotate.conf; 644; ${{RUN_AS_USER}}; root
+-/opt/microsoft/omsconfig/bin/OMSConsistencyInvoker; omi-1.0.8/output/bin/OMSConsistencyInvoker; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/omsconfig/etc/omsconfig.consistencyinvoker.conf; LCM/omsconfig.consistencyinvoker.conf; 644; ${{RUN_AS_USER}}; root
+-/opt/microsoft/omsconfig/etc/Inventory.mof; LCM/Base_Inventory.mof; 644; ${{RUN_AS_USER}}; root
+-/opt/microsoft/omsconfig/lib/libomsconfig.so; omi-1.0.8/output/lib/libomsconfig.so; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/omsconfig/etc/omsconfig.reg; LCM/omsconfig.reg; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/omsconfig/Scripts/OMSRsyslog.post.sh; intermediate/Scripts/OMSRsyslog.post.sh; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/omsconfig/Scripts/OMSSysklog.post.sh; intermediate/Scripts/OMSSysklog.post.sh; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/omsconfig/Scripts/OMSSyslog-ng.post.sh; intermediate/Scripts/OMSSyslog-ng.post.sh; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/omsconfig/Scripts/OMSServiceStat.sh; intermediate/Scripts/OMSServiceStat.sh; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/omsconfig/Scripts/OMSServiceStatAll.sh; intermediate/Scripts/OMSServiceStatAll.sh; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/omsconfig/Scripts/OMSYumUpdates.sh; intermediate/Scripts/OMSYumUpdates.sh; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/omsconfig/Scripts/OMSZypperUpdates.sh; intermediate/Scripts/OMSZypperUpdates.sh; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/omsconfig/Scripts/OMSAptUpdates.sh; intermediate/Scripts/OMSAptUpdates.sh; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/omsconfig/Scripts/OMS_MetaConfigHelper.py; intermediate/Scripts/OMS_MetaConfigHelper.py; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/omsconfig/module_packages/nx_1.0.zip; release/nx_1.0.zip; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/omsconfig/module_packages/nxOMSAgent_1.0.zip; release/nxOMSAgent_1.0.zip; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/omsconfig/module_packages/nxOMSCustomLog_1.0.zip; release/nxOMSCustomLog_1.0.zip; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/omsconfig/module_packages/nxOMSGenerateInventoryMof_1.0.zip; release/nxOMSGenerateInventoryMof_1.0.zip; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/keys/dscgpgkey.asc; LCM/keys/dscgpgkey.asc; 644; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/keys/msgpgkey.asc; LCM/keys/msgpgkey.asc; 644; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/etc/logrotate.conf; Providers/Extras/Scripts/omsconfig_logrotate.conf; 644; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/bin/OMSConsistencyInvoker; omi-1.0.8/output/bin/OMSConsistencyInvoker; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/etc/omsconfig.consistencyinvoker.conf; LCM/omsconfig.consistencyinvoker.conf; 644; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/etc/Inventory.mof; LCM/Base_Inventory.mof; 644; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/lib/libomsconfig.so; omi-1.0.8/output/lib/libomsconfig.so; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/etc/omsconfig.reg; LCM/omsconfig.reg; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/OMSRsyslog.post.sh; intermediate/Scripts/OMSRsyslog.post.sh; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/OMSSysklog.post.sh; intermediate/Scripts/OMSSysklog.post.sh; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/OMSSyslog-ng.post.sh; intermediate/Scripts/OMSSyslog-ng.post.sh; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/OMSServiceStat.sh; intermediate/Scripts/OMSServiceStat.sh; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/OMSServiceStatAll.sh; intermediate/Scripts/OMSServiceStatAll.sh; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/OMSYumUpdates.sh; intermediate/Scripts/OMSYumUpdates.sh; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/OMSZypperUpdates.sh; intermediate/Scripts/OMSZypperUpdates.sh; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/OMSAptUpdates.sh; intermediate/Scripts/OMSAptUpdates.sh; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/OMS_MetaConfigHelper.py; intermediate/Scripts/OMS_MetaConfigHelper.py; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/module_packages/nx_1.0.zip; release/nx_1.0.zip; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/module_packages/nxOMSAgent_1.0.zip; release/nxOMSAgent_1.0.zip; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/module_packages/nxOMSCustomLog_1.0.zip; release/nxOMSCustomLog_1.0.zip; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/module_packages/nxOMSGenerateInventoryMof_1.0.zip; release/nxOMSGenerateInventoryMof_1.0.zip; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/keys/dscgpgkey.asc; LCM/keys/dscgpgkey.asc; 644; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/keys/msgpgkey.asc; LCM/keys/msgpgkey.asc; 644; ${{RUN_AS_USER}}; root
+ 
+ #else
+ 
+-/opt/microsoft/${{SHORT_NAME}}/bin/omi_preexec.sh; intermediate/Scripts/omi_preexec.sh; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/etc/logrotate.conf; Providers/Extras/Scripts/logrotate.conf; 644; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/etc/dsccore.reg; LCM/dsccore.reg; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/bin/ConsistencyInvoker; omi-1.0.8/output/bin/ConsistencyInvoker; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/lib/libdsccore.so; omi-1.0.8/output/lib/libdsccore.so; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/module_packages/nx_1.0.zip; release/nx_1.0.zip; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/bin/omi_preexec.sh; intermediate/Scripts/omi_preexec.sh; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/etc/logrotate.conf; Providers/Extras/Scripts/logrotate.conf; 644; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/etc/dsccore.reg; LCM/dsccore.reg; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/bin/ConsistencyInvoker; omi-1.0.8/output/bin/ConsistencyInvoker; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/lib/libdsccore.so; omi-1.0.8/output/lib/libdsccore.so; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/module_packages/nx_1.0.zip; release/nx_1.0.zip; 755; ${{RUN_AS_USER}}; root
+ 
+ 
+ #endif
+ 
+ 
+ %Directories
+-/opt/microsoft;                                           755; root; root; sysdir
+-/opt/microsoft/${{SHORT_NAME}};                           755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/etc;                       755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/mof;                       755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/lib;                       755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/bin;                       755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/modules;                   755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/module_packages;           755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/keys;                      755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts;                   755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/2.4x-2.5x;         755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/2.4x-2.5x/Scripts; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/2.6x-2.7x;         755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/2.6x-2.7x/Scripts; 755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/3.x;               755; ${{RUN_AS_USER}}; root
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/3.x/Scripts;       755; ${{RUN_AS_USER}}; root
+-/etc/opt/omi/conf;                                        755; root; root; sysdir
+-/etc/opt/omi/conf/${{SHORT_NAME}};                        755; ${{RUN_AS_USER}}; root
+-/etc/logrotate.d;                                         755; root; root; sysdir
++%% /opt/microsoft;                                          755; root; root; sysdir
++/var/vcap/packages/omsconfig;                               755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt;                           755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/etc;                       755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/mof;                       755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/lib;                       755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/bin;                       755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/modules;                   755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/module_packages;           755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/keys;                      755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts;                   755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/2.4x-2.5x;         755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/2.4x-2.5x/Scripts; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/2.6x-2.7x;         755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/2.6x-2.7x/Scripts; 755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/3.x;               755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omsconfig/opt/Scripts/3.x/Scripts;       755; ${{RUN_AS_USER}}; root
++/var/vcap/packages/omi/etc/conf;                            755; root; root; sysdir
++/var/vcap/packages/omi/etc/conf/omsconfig;                  755; ${{RUN_AS_USER}}; root
++/etc/logrotate.d;                                           755; root; root; sysdir
+ #if BUILD_OMS == 1
+-/etc/opt/microsoft/omsagent/conf/omsagent.d; 755; ${{RUN_AS_USER}}; root; sysdir
++/var/vcap/packages/omsagent/etc/conf/omsagent.d; 755; ${{RUN_AS_USER}}; root; sysdir
+ #endif
+ 
+ %Links
+-/etc/logrotate.d/${{SHORT_NAME}}; /opt/microsoft/${{SHORT_NAME}}/etc/logrotate.conf; 644; root; root
++/etc/logrotate.d/omsconfig; /var/vcap/packages/omsconfig/opt/etc/logrotate.conf; 644; root; root
+ 
+ %Dependencies
+ #if BUILD_OMS == 1
+ #if PACKAGE_TYPE == RPM
+-omsagent >= 1.0.0
++omsagent-bosh >= 1.0.0
+ #else
+-omsagent (>= 1.0.0)
++omsagent-bosh (>= 1.0.0)
+ #endif
+ #endif
+ #if PACKAGE_TYPE == RPM
+-omi >= 1.0.8-6
++omi-bosh >= 1.0.8-6
+ #else
+-omi (>= 1.0.8.6)
++omi-bosh (>= 1.0.8.6)
+ #endif
+ 
+ %Preinstall_10
+@@ -155,7 +156,7 @@ fi
+ #endif
+ 
+ %Preinstall_200
+-tmpfile=`mktemp`
++tmpfile=`mktemp -p .`
+ printf "Checking for ctypes python module..."
+ cat <<EOF > $tmpfile
+ #!/usr/bin/python
+@@ -175,35 +176,35 @@ else
+ fi
+ 
+ %Postinstall_10
+-OMI_HOME=/opt/omi
+-OMI_REGISTER_DIR=/etc/opt/omi/conf/omiregister/
+-CONFIG_SYSCONFDIR=/etc/opt/omi/conf
++OMI_HOME=/var/vcap/packages/omi/opt
++OMI_REGISTER_DIR=/var/vcap/packages/omi/etc/conf/omiregister/
++CONFIG_SYSCONFDIR=/var/vcap/packages/omi/etc/conf
+ CONFIG_DATADIR=$OMI_HOME/share
+ OMI_LIB=$OMI_HOME/lib
+ 
+-mkdir -p $CONFIG_SYSCONFDIR/${{SHORT_NAME}}
+-mkdir -p $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/InventoryReports
+-mkdir -p $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration
+-mkdir -p $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/schema
+-mkdir -p $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/schema/MSFT_LogResource
+-mkdir -p $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/baseregistration
+-mkdir -p $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/registration
+-mkdir -p $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/registration/MSFT_LogResource
+-mkdir -p $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/BuiltinProvCache
+-mkdir -p $CONFIG_DATADIR/${{SHORT_NAME}}
+-mkdir -p $CONFIG_DATADIR/${{SHORT_NAME}}/configuration
+-mkdir -p $CONFIG_DATADIR/${{SHORT_NAME}}/configuration/schema
+-mkdir -p $CONFIG_DATADIR/${{SHORT_NAME}}/configuration/registration
+-chmod 700 $CONFIG_SYSCONFDIR/${{SHORT_NAME}}
++mkdir -p $CONFIG_SYSCONFDIR/omsconfig
++mkdir -p $CONFIG_SYSCONFDIR/omsconfig/InventoryReports
++mkdir -p $CONFIG_SYSCONFDIR/omsconfig/configuration
++mkdir -p $CONFIG_SYSCONFDIR/omsconfig/configuration/schema
++mkdir -p $CONFIG_SYSCONFDIR/omsconfig/configuration/schema/MSFT_LogResource
++mkdir -p $CONFIG_SYSCONFDIR/omsconfig/configuration/baseregistration
++mkdir -p $CONFIG_SYSCONFDIR/omsconfig/configuration/registration
++mkdir -p $CONFIG_SYSCONFDIR/omsconfig/configuration/registration/MSFT_LogResource
++mkdir -p $CONFIG_SYSCONFDIR/omsconfig/configuration/BuiltinProvCache
++mkdir -p $CONFIG_DATADIR/omsconfig
++mkdir -p $CONFIG_DATADIR/omsconfig/configuration
++mkdir -p $CONFIG_DATADIR/omsconfig/configuration/schema
++mkdir -p $CONFIG_DATADIR/omsconfig/configuration/registration
++chmod 700 $CONFIG_SYSCONFDIR/omsconfig
+ 
+ # Create links in omi's directories for DSC data
+ 
+ #if BUILD_OMS == 1
+ mkdir -p $OMI_REGISTER_DIR/root-oms
+-cp -f /opt/microsoft/${{SHORT_NAME}}/etc/*.reg $OMI_REGISTER_DIR/root-oms
+-cp -f /opt/microsoft/${{SHORT_NAME}}/etc/omsconfig.reg $OMI_REGISTER_DIR/root-oms
+-ln -fs /opt/microsoft/${{SHORT_NAME}}/lib/libomsconfig.so $OMI_HOME/lib/libomsconfig.so
+-ln -fs /opt/microsoft/${{SHORT_NAME}}/bin/OMSConsistencyInvoker $OMI_HOME/bin/OMSConsistencyInvoker
++cp -f /var/vcap/packages/omsconfig/opt/etc/*.reg $OMI_REGISTER_DIR/root-oms
++cp -f /var/vcap/packages/omsconfig/opt/etc/omsconfig.reg $OMI_REGISTER_DIR/root-oms
++ln -fs /var/vcap/packages/omsconfig/opt/lib/libomsconfig.so $OMI_HOME/lib/libomsconfig.so
++ln -fs /var/vcap/packages/omsconfig/opt/bin/OMSConsistencyInvoker $OMI_HOME/bin/OMSConsistencyInvoker
+ 
+ #else
+ 
+@@ -212,54 +213,54 @@ $OMI_HOME/bin/omiconfigeditor httpsport -a 5986 < $CONFIG_SYSCONFDIR/omiserver.c
+ mv $CONFIG_SYSCONFDIR/omiserver.conf_temp $CONFIG_SYSCONFDIR/omiserver.conf
+ 
+ mkdir -p $OMI_REGISTER_DIR/root-Microsoft-DesiredStateConfiguration
+-cp -f /opt/microsoft/${{SHORT_NAME}}/etc/*.reg $OMI_REGISTER_DIR/root-Microsoft-DesiredStateConfiguration
+-cp -f /opt/microsoft/${{SHORT_NAME}}/etc/dsccore.reg $OMI_REGISTER_DIR/root-Microsoft-DesiredStateConfiguration/
+-ln -fs /opt/microsoft/${{SHORT_NAME}}/lib/libdsccore.so $OMI_HOME/lib/libdsccore.so
+-ln -fs /opt/microsoft/${{SHORT_NAME}}/bin/ConsistencyInvoker $OMI_HOME/bin/ConsistencyInvoker
++cp -f /var/vcap/packages/omsconfig/opt/etc/*.reg $OMI_REGISTER_DIR/root-Microsoft-DesiredStateConfiguration
++cp -f /var/vcap/packages/omsconfig/opt/etc/dsccore.reg $OMI_REGISTER_DIR/root-Microsoft-DesiredStateConfiguration/
++ln -fs /var/vcap/packages/omsconfig/opt/lib/libdsccore.so $OMI_HOME/lib/libdsccore.so
++ln -fs /var/vcap/packages/omsconfig/opt/bin/ConsistencyInvoker $OMI_HOME/bin/ConsistencyInvoker
+ ln -fs $OMI_REGISTER_DIR/root-Microsoft-DesiredStateConfiguration $OMI_REGISTER_DIR/root-Microsoft-Windows-DesiredStateConfiguration
+ #endif
+ 
+-cp -f /opt/microsoft/${{SHORT_NAME}}/mof/OMI_BaseResourceUE.mof $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/baseregistration/baseresource.schema.mof
+-cp -f /opt/microsoft/${{SHORT_NAME}}/mof/MSFT_DSCMetaConfiguration.mof $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/baseregistration/MSFT_DSCMetaConfiguration.mof
+-cp -f /opt/microsoft/${{SHORT_NAME}}/mof/MSFT_LogResource.registration.mof  $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/registration/MSFT_LogResource
+-cp -f /opt/microsoft/${{SHORT_NAME}}/mof/MSFT_LogResource.schema.mof  $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/schema/MSFT_LogResource
++cp -f /var/vcap/packages/omsconfig/opt/mof/OMI_BaseResourceUE.mof $CONFIG_SYSCONFDIR/omsconfig/configuration/baseregistration/baseresource.schema.mof
++cp -f /var/vcap/packages/omsconfig/opt/mof/MSFT_DSCMetaConfiguration.mof $CONFIG_SYSCONFDIR/omsconfig/configuration/baseregistration/MSFT_DSCMetaConfiguration.mof
++cp -f /var/vcap/packages/omsconfig/opt/mof/MSFT_LogResource.registration.mof  $CONFIG_SYSCONFDIR/omsconfig/configuration/registration/MSFT_LogResource
++cp -f /var/vcap/packages/omsconfig/opt/mof/MSFT_LogResource.schema.mof  $CONFIG_SYSCONFDIR/omsconfig/configuration/schema/MSFT_LogResource
+ 
+ for prov in ${{PROVIDERS}}; do
+ #if BUILD_OMS == 1
+-    cp -f /opt/microsoft/${{SHORT_NAME}}/etc/MSFT_nx${prov}Resource.reg $OMI_REGISTER_DIR/root-oms
++    cp -f /var/vcap/packages/omsconfig/opt/etc/MSFT_nx${prov}Resource.reg $OMI_REGISTER_DIR/root-oms
+ #else
+-    cp -f /opt/microsoft/${{SHORT_NAME}}/etc/MSFT_nx${prov}Resource.reg $OMI_REGISTER_DIR/root-Microsoft-DesiredStateConfiguration
++    cp -f /var/vcap/packages/omsconfig/opt/etc/MSFT_nx${prov}Resource.reg $OMI_REGISTER_DIR/root-Microsoft-DesiredStateConfiguration
+ #endif
+-    mkdir -p $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/schema/MSFT_nx${prov}Resource/ $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/registration/MSFT_nx${prov}Resource/
+-    cp -f /opt/microsoft/${{SHORT_NAME}}/mof/MSFT_nx${prov}Resource.schema.mof $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/schema/MSFT_nx${prov}Resource/
+-    cp -f /opt/microsoft/${{SHORT_NAME}}/mof/MSFT_nx${prov}Resource.registration.mof $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/registration/MSFT_nx${prov}Resource/
+-    ln -fs /opt/microsoft/${{SHORT_NAME}}/lib/libMSFT_nx${prov}Resource.so $OMI_LIB/libMSFT_nx${prov}Resource.so
++    mkdir -p $CONFIG_SYSCONFDIR/omsconfig/configuration/schema/MSFT_nx${prov}Resource/ $CONFIG_SYSCONFDIR/omsconfig/configuration/registration/MSFT_nx${prov}Resource/
++    cp -f /var/vcap/packages/omsconfig/opt/mof/MSFT_nx${prov}Resource.schema.mof $CONFIG_SYSCONFDIR/omsconfig/configuration/schema/MSFT_nx${prov}Resource/
++    cp -f /var/vcap/packages/omsconfig/opt/mof/MSFT_nx${prov}Resource.registration.mof $CONFIG_SYSCONFDIR/omsconfig/configuration/registration/MSFT_nx${prov}Resource/
++    ln -fs /var/vcap/packages/omsconfig/opt/lib/libMSFT_nx${prov}Resource.so $OMI_LIB/libMSFT_nx${prov}Resource.so
+ done
+ 
+-chmod a+rx $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/
+-chmod a+rx $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration
+-chmod -R a+rx $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/schema
+-chmod -R a+rx $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/baseregistration
+-chmod -R a+rx $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration/registration
++chmod a+rx $CONFIG_SYSCONFDIR/omsconfig/
++chmod a+rx $CONFIG_SYSCONFDIR/omsconfig/configuration
++chmod -R a+rx $CONFIG_SYSCONFDIR/omsconfig/configuration/schema
++chmod -R a+rx $CONFIG_SYSCONFDIR/omsconfig/configuration/baseregistration
++chmod -R a+rx $CONFIG_SYSCONFDIR/omsconfig/configuration/registration
+ 
+-for f in /opt/omi/lib/libMSFT_*; do
++for f in /var/vcap/packages/omi/opt/lib/libMSFT_*; do
+     if [ -L $f ]; then
+         rm $f
+     fi
+ done
+ 
+ #if BUILD_OMS == 1
+-chown -R ${{RUN_AS_USER}} /opt/microsoft/omsconfig/modules
++chown -R ${{RUN_AS_USER}} /var/vcap/packages/omsconfig/opt/modules
+ chown -R ${{RUN_AS_USER}} $OMI_REGISTER_DIR/root-oms
+-chown -R ${{RUN_AS_USER}} /etc/opt/omi/conf/${{SHORT_NAME}}
+-chown -R ${{RUN_AS_USER}} /opt/microsoft/omsagent/plugin
+-chown -R ${{RUN_AS_USER}} /opt/microsoft/omsconfig/Scripts
++chown -R ${{RUN_AS_USER}} /var/vcap/packages/omi/etc/conf/omsconfig
++chown -R ${{RUN_AS_USER}} /var/vcap/packages/omsagent/opt/plugin
++chown -R ${{RUN_AS_USER}} /var/vcap/packages/omsconfig/opt/Scripts
+ 
+ # Set up the nxOMSAgent module
+-su - omsagent -c "/opt/microsoft/omsconfig/Scripts/InstallModule.py /opt/microsoft/omsconfig/module_packages/nx_1.0.zip 0"
+-su - omsagent -c "/opt/microsoft/omsconfig/Scripts/InstallModule.py /opt/microsoft/omsconfig/module_packages/nxOMSAgent_1.0.zip 0"
+-su - omsagent -c "/opt/microsoft/omsconfig/Scripts/InstallModule.py /opt/microsoft/omsconfig/module_packages/nxOMSCustomLog_1.0.zip 0"
+-su - omsagent -c "/opt/microsoft/omsconfig/Scripts/InstallModule.py /opt/microsoft/omsconfig/module_packages/nxOMSGenerateInventoryMof_1.0.zip 0"
++su - omsagent -c "/var/vcap/packages/omsconfig/opt/Scripts/InstallModule.py /var/vcap/packages/omsconfig/opt/module_packages/nx_1.0.zip 0"
++su - omsagent -c "/var/vcap/packages/omsconfig/opt/Scripts/InstallModule.py /var/vcap/packages/omsconfig/opt/module_packages/nxOMSAgent_1.0.zip 0"
++su - omsagent -c "/var/vcap/packages/omsconfig/opt/Scripts/InstallModule.py /var/vcap/packages/omsconfig/opt/module_packages/nxOMSCustomLog_1.0.zip 0"
++su - omsagent -c "/var/vcap/packages/omsconfig/opt/Scripts/InstallModule.py /var/vcap/packages/omsconfig/opt/module_packages/nxOMSGenerateInventoryMof_1.0.zip 0"
+ 
+ #else
+ /opt/microsoft/dsc/Scripts/InstallModule.py /opt/microsoft/dsc/module_packages/nx_1.0.zip 0
+@@ -268,51 +269,51 @@ su - omsagent -c "/opt/microsoft/omsconfig/Scripts/InstallModule.py /opt/microso
+ if [ -d  $OMI_LIB/Scripts ]; then
+     rm -rf $OMI_LIB/Scripts
+ fi
+-cp -R /opt/microsoft/${{SHORT_NAME}}/Scripts $OMI_LIB/Scripts
++cp -R /var/vcap/packages/omsconfig/opt/Scripts $OMI_LIB/Scripts
+ 
+-# create symlink from /opt/omi/lib/libcurl.so.4 to wherever libcurl.so is on the system
++# create symlink from /var/vcap/packages/omi/opt/lib/libcurl.so.4 to wherever libcurl.so is on the system
+ LIBCURL_SO=`ldconfig -p | grep "libcurl" | awk -F ">" '{print $2}' | awk -F " " '{print $1; exit 0}'`
+ if [ -z "$LIBCURL_SO" ]; then
+    echo "Error: Unable to find libcurl in ldconfig.  Please install curl."
+    exit 1
+ fi
+ 
+-ln -fs $LIBCURL_SO /opt/omi/lib/libcurl.so.3
+-ln -fs $LIBCURL_SO /opt/omi/lib/libcurl.so.4
++ln -fs $LIBCURL_SO /var/vcap/packages/omi/opt/lib/libcurl.so.3
++ln -fs $LIBCURL_SO /var/vcap/packages/omi/opt/lib/libcurl.so.4
+ 
+ #if BUILD_OMS == 1
+-chown -R omsagent /opt/microsoft/${{SHORT_NAME}}/Scripts
+-su - omsagent -c "/opt/microsoft/${{SHORT_NAME}}/Scripts/RegenerateInitFiles.py"
+-su - omsagent -c "/opt/microsoft/${{SHORT_NAME}}/Scripts/ImportGPGKey.sh /opt/microsoft/${{SHORT_NAME}}/keys/msgpgkey.asc keymgmtring.gpg"
+-su - omsagent -c "/opt/microsoft/${{SHORT_NAME}}/Scripts/ImportGPGKey.sh /opt/microsoft/${{SHORT_NAME}}/keys/dscgpgkey.asc keyring.gpg"
++chown -R omsagent /var/vcap/packages/omsconfig/opt/Scripts
++su - omsagent -c "/var/vcap/packages/omsconfig/opt/Scripts/RegenerateInitFiles.py"
++su - omsagent -c "/var/vcap/packages/omsconfig/opt/Scripts/ImportGPGKey.sh /var/vcap/packages/omsconfig/opt/keys/msgpgkey.asc keymgmtring.gpg"
++su - omsagent -c "/var/vcap/packages/omsconfig/opt/Scripts/ImportGPGKey.sh /var/vcap/packages/omsconfig/opt/keys/dscgpgkey.asc keyring.gpg"
+ #else
+-/opt/microsoft/${{SHORT_NAME}}/Scripts/RegenerateInitFiles.py
++/var/vcap/packages/omsconfig/opt/Scripts/RegenerateInitFiles.py
+ 
+-cat /etc/crontab | awk '{ if ($7 != "/opt/omi/bin/ConsistencyInvoker") { print $0 } }' > /etc/crontabtmp
+-cat /etc/crontab | awk '{ if ($7 == "/opt/omi/bin/ConsistencyInvoker") { print $0 } }' > /etc/cron.d/dsc
++cat /etc/crontab | awk '{ if ($7 != "/var/vcap/packages/omi/opt/bin/ConsistencyInvoker") { print $0 } }' > /etc/crontabtmp
++cat /etc/crontab | awk '{ if ($7 == "/var/vcap/packages/omi/opt/bin/ConsistencyInvoker") { print $0 } }' > /etc/cron.d/dsc
+ mv /etc/crontabtmp /etc/crontab
+ #endif
+ 
+ 
+-/opt/omi/bin/service_control restart
++/var/vcap/packages/omi/opt/bin/service_control restart
+ 
+ #if BUILD_OMS == 1
+ 
+ # Set up logging directory
+-mkdir -p /var/opt/microsoft/omsconfig
+-chown omsagent /var/opt/microsoft/omsconfig
+-chgrp omsagent /var/opt/microsoft/omsconfig
++mkdir -p /var/vcap/packages/omsconfig/var
++chown omsagent /var/vcap/packages/omsconfig/var
++chgrp omsagent /var/vcap/packages/omsconfig/var
+ 
+ # If omsadmin.conf exists, let's apply the metaconfig
+-if [ -f /etc/opt/microsoft/omsagent/conf/omsadmin.conf ]; then
+-   su - omsagent -c "/opt/microsoft/omsconfig/Scripts/OMS_MetaConfigHelper.py"
++if [ -f /var/vcap/packages/omsagent/etc/conf/omsadmin.conf ]; then
++   su - omsagent -c "/var/vcap/packages/omsconfig/opt/Scripts/OMS_MetaConfigHelper.py"
+ fi
+ 
+-cp -f /opt/microsoft/omsconfig/etc/omsconfig.consistencyinvoker.conf /etc/opt/microsoft/omsagent/conf/omsagent.d/omsconfig.consistencyinvoker.conf
+-cp -f /opt/microsoft/omsconfig/etc/Inventory.mof /etc/opt/omi/conf/omsconfig/configuration/Inventory.mof
+-chown omsagent /etc/opt/microsoft/omsagent/conf/omsagent.d/omsconfig.consistencyinvoker.conf /etc/opt/omi/conf/omsconfig/configuration/Inventory.mof
+-chgrp omsagent /etc/opt/microsoft/omsagent/conf/omsagent.d/omsconfig.consistencyinvoker.conf /etc/opt/omi/conf/omsconfig/configuration/Inventory.mof
+-/opt/microsoft/omsagent/bin/service_control reload
++cp -f /var/vcap/packages/omsconfig/opt/etc/omsconfig.consistencyinvoker.conf /var/vcap/packages/omsagent/etc/conf/omsagent.d/omsconfig.consistencyinvoker.conf
++cp -f /var/vcap/packages/omsconfig/opt/etc/Inventory.mof /var/vcap/packages/omi/etc/conf/omsconfig/configuration/Inventory.mof
++chown omsagent /var/vcap/packages/omsagent/etc/conf/omsagent.d/omsconfig.consistencyinvoker.conf /var/vcap/packages/omi/etc/conf/omsconfig/configuration/Inventory.mof
++chgrp omsagent /var/vcap/packages/omsagent/etc/conf/omsagent.d/omsconfig.consistencyinvoker.conf /var/vcap/packages/omi/etc/conf/omsconfig/configuration/Inventory.mof
++# /var/vcap/packages/omsagent/opt/bin/service_control reload
+ 
+ #endif
+ 
+@@ -320,30 +321,30 @@ chgrp omsagent /etc/opt/microsoft/omsagent/conf/omsagent.d/omsconfig.consistency
+ # if this is a package removal, not an upgrade, remove the modules
+ if [ "$1" = "0" -o "$1" = "remove" -o "$1" = "purge" ]; then
+     # Remove all DSC specific data
+-    for module in `ls /opt/microsoft/${{SHORT_NAME}}/modules`; do
+-        /opt/microsoft/${{SHORT_NAME}}/Scripts/RemoveModule.py $module
++    for module in `ls /var/vcap/packages/omsconfig/opt/modules`; do
++        /var/vcap/packages/omsconfig/opt/Scripts/RemoveModule.py $module
+     done
+ fi
+ 
+ %Postuninstall_999
+-OMI_HOME=/opt/omi
+-OMI_REGISTER_DIR=/etc/opt/omi/conf/omiregister
+-CONFIG_SYSCONFDIR=/etc/opt/omi/conf
++OMI_HOME=/var/vcap/packages/omi/opt
++OMI_REGISTER_DIR=/var/vcap/packages/omi/etc/conf/omiregister
++CONFIG_SYSCONFDIR=/var/vcap/packages/omi/etc/conf
+ CONFIG_DATADIR=$OMI_HOME/share
+ OMI_LIB=$OMI_HOME/lib
+ 
+ # if this is a package removal, not an upgrade, remove the modules
+ if [ "$1" = "0" -o "$1" = "remove" -o "$1" = "purge" ]; then
+-    rm -rf $CONFIG_SYSCONFDIR/${{SHORT_NAME}}/configuration
+-    rm -rf $CONFIG_DATADIR/${{SHORT_NAME}}/
++    rm -rf $CONFIG_SYSCONFDIR/omsconfig/configuration
++    rm -rf $CONFIG_DATADIR/omsconfig/
+     rm -rf $OMI_LIB/Scripts
+-    rm -rf /opt/microsoft/${{SHORT_NAME}}/
++    rm -rf /var/vcap/packages/omsconfig/opt/
+     rm -f /etc/cron.d/dsc
+ #if BUILD_OMS == 1
+     rm -rf $OMI_REGISTER_DIR/root-oms
+     rm -f $OMI_HOME/bin/OMSConsistencyInvoker
+     rm -f $OMI_LIB/libomsconfig.so    
+-    rm -f /etc/opt/microsoft/omsagent/conf/omsagent.d/omsconfig.consistencyinvoker.conf
++    rm -f /var/vcap/packages/omsagent/etc/conf/omsagent.d/omsconfig.consistencyinvoker.conf
+ #else
+     rm -rf $OMI_REGISTER_DIR/root-Microsoft-DesiredStateConfiguration
+     rm -rf $OMI_REGISTER_DIR/root-Microsoft-Windows-DesiredStateConfiguration
+@@ -366,11 +367,11 @@ fi
+ #
+ # Add a 'sleep' operation (ugly, I know) to try and avoid this race condition.
+ 
+-/opt/microsoft/omsagent/bin/service_control reload
+-if pidof systemd 1> /dev/null 2> /dev/null; then
+-    echo "Pausing briefly for systemctl synchronization ..."
+-    sleep 5
+-fi
++# /var/vcap/packages/omsagent/opt/bin/service_control reload
++# if pidof systemd 1> /dev/null 2> /dev/null; then
++#    echo "Pausing briefly for systemctl synchronization ..."
++#    sleep 5
++# fi
+ 
+ #endif
+ 

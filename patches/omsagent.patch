@@ -1,0 +1,1456 @@
+diff --git a/build/buildRuby.sh b/build/buildRuby.sh
+index 63fb149..38420f3 100755
+--- a/build/buildRuby.sh
++++ b/build/buildRuby.sh
+@@ -54,7 +54,7 @@ elevate()
+ # Also builds fluentd since it lives under the Ruby directory
+ 
+ BASE_DIR=`(cd ..; pwd -P)`
+-OMS_AGENTDIR=/opt/microsoft/omsagent
++OMS_AGENTDIR=/var/vcap/packages/omsagent/opt
+ 
+ PATCHES_SRCDIR=${BASE_DIR}/source/ext/patches
+ RUBY_SRCDIR=${BASE_DIR}/source/ext/ruby
+diff --git a/build/configure b/build/configure
+index a372865..bfb9ea5 100755
+--- a/build/configure
++++ b/build/configure
+@@ -389,7 +389,7 @@ ruby_configure_quals=(
+     --with-out-ext=${RUBY_EXTENSIONS}
+   )
+ 
+-ruby_config_quals_sysins="--prefix=/opt/microsoft/omsagent/ruby"
++ruby_config_quals_sysins="--prefix=/var/vcap/packages/omsagent/opt/ruby"
+ 
+ ruby_test_directory="${home_dir}/bin/omsagent_test_ruby"
+ ruby_config_quals_testins="--prefix=${ruby_test_directory}"
+@@ -406,11 +406,11 @@ sudo rm -rf ${ruby_test_directory}
+ if [ "$ULINUX" = "1" ]; then
+     ssl_098_dirpath=/usr/local_ssl_0.9.8
+     ruby_configure_quals_098=( --with-openssl-dir=$ssl_098_dirpath
+-        \"LDFLAGS=-Wl,-rpath=/opt/omi/lib\" )
++        \"LDFLAGS=-Wl,-rpath=/var/vcap/packages/omi/opt/lib\" )
+ 
+     ssl_100_dirpath=/usr/local_ssl_1.0.0
+     ruby_configure_quals_100=( --with-openssl-dir=$ssl_100_dirpath
+-        \"LDFLAGS=-Wl,-rpath=/opt/omi/lib\" )
++        \"LDFLAGS=-Wl,-rpath=/var/vcap/packages/omi/opt/lib\" )
+ fi
+ 
+ # Do we have a version file from the super project? If not, make one
+diff --git a/installer/bundle/bundle_skel.sh b/installer/bundle/bundle_skel.sh
+index 5ec1da8..d64a078 100644
+--- a/installer/bundle/bundle_skel.sh
++++ b/installer/bundle/bundle_skel.sh
+@@ -26,9 +26,9 @@ SCRIPT="$SCRIPT_DIR/`basename $0`"
+ EXTRACT_DIR="`pwd -P`/omsbundle.$$"
+ ONBOARD_FILE=/etc/omsagent-onboard.conf
+ DPKG_CONF_QUALS="--force-confold --force-confdef"
+-OMISERV_CONF="/etc/opt/omi/conf/omiserver.conf"
+-OLD_OMISERV_CONF="/etc/opt/microsoft/scx/conf/omiserver.conf"
+-OMS_RUBY_DIR="/opt/microsoft/omsagent/ruby/bin"
++OMISERV_CONF="/var/vcap/packages/omi/etc/conf/omiserver.conf"
++OLD_OMISERV_CONF="/var/vcap/packages/scx/etc/conf/omiserver.conf"
++OMS_RUBY_DIR="/var/vcap/packages/omsagent/opt/ruby/bin"
+ 
+ # These symbols will get replaced during the bundle creation process.
+ 
+@@ -625,8 +625,8 @@ cd $EXTRACT_DIR
+ # Do we need to remove the package?
+ set +e
+ if [ "$installMode" = "R" -o "$installMode" = "P" ]; then
+-    if [ -f /opt/microsoft/omsagent/bin/uninstall ]; then
+-        /opt/microsoft/omsagent/bin/uninstall $installMode
++    if [ -f /var/vcap/packages/omsagent/opt/bin/uninstall ]; then
++        /var/vcap/packages/omsagent/opt/bin/uninstall $installMode
+     else
+         echo "---------- WARNING WARNING WARNING ----------"
+         echo "Using new shell bundle to remove older kit."
+@@ -640,8 +640,8 @@ if [ "$installMode" = "R" -o "$installMode" = "P" ]; then
+         # If MDSD is installed and we're just removing (not purging), leave SCX
+ 
+         if [ ! -d /var/lib/waagent/Microsoft.OSTCExtensions.LinuxDiagnostic-*/mdsd -o "$installMode" = "P" ]; then
+-            if [ -f /opt/microsoft/scx/bin/uninstall ]; then
+-                /opt/microsoft/scx/bin/uninstall $installMode
++            if [ -f /var/vcap/packages/scx/opt/bin/uninstall ]; then
++                /var/vcap/packages/scx/opt/bin/uninstall $installMode
+             else
+                 for i in /opt/microsoft/*-cimprov; do
+                     PKG_NAME=`basename $i`
+@@ -668,23 +668,23 @@ if [ "$installMode" = "R" -o "$installMode" = "P" ]; then
+ 
+             check_if_pkg_is_installed omsconfig
+             if [ $? -ne 0 ]; then
+-                rm -rf /etc/opt/microsoft/omsconfig /opt/microsoft/omsconfig /var/opt/microsoft/omsconfig
++                rm -rf /var/vcap/packages/omsconfig/etc /var/vcap/packages/omsconfig/opt /var/vcap/packages/omsconfig/var
+             fi
+ 
+             check_if_pkg_is_installed omsagent
+             if [ $? -ne 0 ]; then
+-                rm -rf /etc/opt/microsoft/omsagent /opt/microsoft/omsagent /var/opt/microsoft/omsagent
++                rm -rf /var/vcap/packages/omsagent/etc /var/vcap/packages/omsagent/opt /var/vcap/packages/omsagent/var
+             fi
+ 
+             check_if_pkg_is_installed scx
+             if [ $? -ne 0 ]; then
+-                rm -rf /etc/opt/microsoft/scx /opt/microsoft/scx /var/opt/microsoft/scx \
++                rm -rf /var/vcap/packages/scx/etc /var/vcap/packages/scx/opt /var/vcap/packages/scx/var \
+                     /etc/opt/microsoft/*-cimprov /opt/microsoft/*-cimprov /var/opt/microsoft/*-cimprov
+             fi
+ 
+             check_if_pkg_is_installed omi
+             if [ $? -ne 0 ]; then
+-                rm -rf /etc/opt/omi /opt/omi /var/opt/omi
++                rm -rf /var/vcap/packages/omi/etc /var/vcap/packages/omi/opt /var/vcap/packages/omi/var
+             fi
+ 
+             rmdir /etc/opt/microsoft /opt/microsoft /var/opt/microsoft > /dev/null 2> /dev/null || true
+@@ -843,24 +843,24 @@ case "$installMode" in
+ 		
+         if [ $KIT_STATUS -eq 0 ]; then
+             # These conditionals exist due to some upgrade bugs in the postuninstall scripts of previous kits. These can be removed after GA.
+-            if [ -d /opt/microsoft/omsconfig ]; then
+-                if [ ! -f /opt/microsoft/omsconfig/Scripts/2.6x-2.7x/Scripts/nxOMSAgent.py ]; then
+-                    if ! su - omsagent -c "/opt/microsoft/omsconfig/Scripts/InstallModule.py /opt/microsoft/omsconfig/module_packages/nxOMSAgent_1.0.zip 0"; then
++            if [ -d /var/vcap/packages/omsconfig/opt ]; then
++                if [ ! -f /var/vcap/packages/omsconfig/opt/Scripts/2.6x-2.7x/Scripts/nxOMSAgent.py ]; then
++                    if ! su - omsagent -c "/var/vcap/packages/omsconfig/opt/Scripts/InstallModule.py /var/vcap/packages/omsconfig/opt/module_packages/nxOMSAgent_1.0.zip 0"; then
+                         echo "Failure to install nxOMSAgent module"
+                         KIT_STATUS=1
+                     fi
+                 fi
+-                if [ ! -f /etc/opt/microsoft/omsagent/conf/omsagent.d/omsconfig.consistencyinvoker.conf ]; then
+-                    if ! cp -f /opt/microsoft/omsconfig/etc/omsconfig.consistencyinvoker.conf /etc/opt/microsoft/omsagent/conf/omsagent.d/omsconfig.consistencyinvoker.conf; then
++                if [ ! -f /var/vcap/packages/omsagent/etc/conf/omsagent.d/omsconfig.consistencyinvoker.conf ]; then
++                    if ! cp -f /var/vcap/packages/omsconfig/opt/etc/omsconfig.consistencyinvoker.conf /var/vcap/packages/omsagent/etc/conf/omsagent.d/omsconfig.consistencyinvoker.conf; then
+                         echo "Failure to copy consistencyinvoker.conf file"
+                         KIT_STATUS=1
+                     else
+-                        chown omsagent /etc/opt/microsoft/omsagent/conf/omsagent.d/omsconfig.consistencyinvoker.conf
+-                        /opt/microsoft/omsagent/bin/service_control reload
++                        chown omsagent /var/vcap/packages/omsagent/etc/conf/omsagent.d/omsconfig.consistencyinvoker.conf
++                        /var/vcap/packages/omsagent/opt/bin/service_control reload
+                     fi
+                 fi
+             fi
+-            /opt/omi/bin/service_control restart
++            /var/vcap/packages/omi/opt/bin/service_control restart
+         fi
+ 
+         # Upgrade bundled providers
+diff --git a/installer/conf/logrotate.conf b/installer/conf/logrotate.conf
+index 69de8e8..95c0178 100644
+--- a/installer/conf/logrotate.conf
++++ b/installer/conf/logrotate.conf
+@@ -1,4 +1,4 @@
+-/var/opt/microsoft/omsagent/log/omsagent.log {
++/var/vcap/sys/log/omsagent/omsagent.log {
+     rotate 5
+     missingok
+     notifempty
+diff --git a/installer/conf/omsagent.conf b/installer/conf/omsagent.conf
+index 867b675..6f8e3d4 100644
+--- a/installer/conf/omsagent.conf
++++ b/installer/conf/omsagent.conf
+@@ -6,7 +6,7 @@
+ <source>
+   type exec
+   tag heartbeat.output
+-  command /opt/microsoft/omsagent/bin/omsadmin.sh -b > /dev/null
++  command /var/vcap/packages/omsagent/opt/bin/omsadmin.sh -b > /dev/null
+   format tsv
+   keys severity,message
+   run_interval 20m
+@@ -74,7 +74,7 @@
+   num_threads 5
+   buffer_chunk_limit 10m
+   buffer_type file
+-  buffer_path /var/opt/microsoft/omsagent/state/out_oms_blob*.buffer
++  buffer_path /var/vcap/packages/omsagent/var/state/out_oms_blob*.buffer
+   buffer_queue_limit 10
+   buffer_queue_full_action drop_oldest_chunk
+   flush_interval 20s
+@@ -90,7 +90,7 @@
+ 
+   buffer_chunk_limit 5m
+   buffer_type file
+-  buffer_path /var/opt/microsoft/omsagent/state/out_oms_common*.buffer
++  buffer_path /var/vcap/packages/omsagent/var/state/out_oms_common*.buffer
+   buffer_queue_limit 10
+   buffer_queue_full_action drop_oldest_chunk
+   flush_interval 20s
+diff --git a/installer/conf/omsagent.d/apache_logs.conf b/installer/conf/omsagent.d/apache_logs.conf
+index 1bb0f8e..6d7d1f8 100644
+--- a/installer/conf/omsagent.d/apache_logs.conf
++++ b/installer/conf/omsagent.d/apache_logs.conf
+@@ -6,7 +6,7 @@
+   tag oms.api.ApacheAccess.time
+   format apache2
+   path /usr/local/apache2/logs/access_log /var/log/apache2/access.log /var/log/httpd/access_log /var/log/apache2/access_log
+-  pos_file /var/opt/microsoft/omsagent/state/var_log_apache_access.pos
++  pos_file /var/vcap/packages/omsagent/var/state/var_log_apache_access.pos
+   run_interval 5s
+   keep_time_key true
+ </source>
+@@ -17,7 +17,7 @@
+   tag oms.api.ApacheError.time
+   format apache_error
+   path /usr/local/apache2/logs/error_log /var/log/apache2/error.log /var/log/httpd/error_log /var/log/apache2/error_log
+-  pos_file /var/opt/microsoft/omsagent/state/var_log_apache_error.pos
++  pos_file /var/vcap/packages/omsagent/var/state/var_log_apache_error.pos
+   run_interval 5s
+   keep_time_key true
+ </source>
+@@ -56,7 +56,7 @@
+   log_level info
+   buffer_chunk_limit 5m
+   buffer_type file
+-  buffer_path /var/opt/microsoft/omsagent/state/out_oms_api_apache*.buffer
++  buffer_path /var/vcap/packages/omsagent/var/state/out_oms_api_apache*.buffer
+   buffer_queue_limit 10
+   flush_interval 20s
+   retry_limit 10
+diff --git a/installer/conf/omsagent.d/auditlog.conf b/installer/conf/omsagent.d/auditlog.conf
+index abf2eb1..1d7628e 100644
+--- a/installer/conf/omsagent.d/auditlog.conf
++++ b/installer/conf/omsagent.d/auditlog.conf
+@@ -1,7 +1,7 @@
+ <source>
+   type sudo_tail
+   path /var/log/audit/audit.log
+-  pos_file /var/opt/microsoft/omsagent/state/var_log_audit_audit_log.pos
++  pos_file /var/vcap/packages/omsagent/var/state/var_log_audit_audit_log.pos
+   read_from_head true
+   run_interval 5s
+   format parser_auditlog
+@@ -20,7 +20,7 @@
+ 
+   buffer_chunk_limit 5m
+   buffer_type file
+-  buffer_path /var/opt/microsoft/omsagent/state/var_log_audit_audit_log*.buffer
++  buffer_path /var/vcap/packages/omsagent/var/state/var_log_audit_audit_log*.buffer
+   buffer_queue_limit 10
+   flush_interval 20s
+   retry_limit 10
+diff --git a/installer/conf/omsagent.d/change_tracking.conf b/installer/conf/omsagent.d/change_tracking.conf
+index e781f76..6d197de 100644
+--- a/installer/conf/omsagent.d/change_tracking.conf
++++ b/installer/conf/omsagent.d/change_tracking.conf
+@@ -1,7 +1,7 @@
+ <source>
+   type exec
+   tag oms.changetracking
+-  command /opt/microsoft/omsconfig/Scripts/PerformInventory.py --InMOF /etc/opt/microsoft/omsagent/conf/omsagent.d/change_tracking_inventory.mof --OutXML /etc/opt/omi/conf/omsconfig/configuration/ChangeTrackingInventory.xml > /dev/null && cat /etc/opt/omi/conf/omsconfig/configuration/ChangeTrackingInventory.xml
++  command /var/vcap/packages/omsconfig/opt/Scripts/PerformInventory.py --InMOF /var/vcap/packages/omsagent/etc/conf/omsagent.d/change_tracking_inventory.mof --OutXML /var/vcap/packages/omi/etc/conf/omsconfig/configuration/ChangeTrackingInventory.xml > /dev/null && cat /var/vcap/packages/omi/etc/conf/omsconfig/configuration/ChangeTrackingInventory.xml
+   format tsv
+   keys xml
+   run_interval 300s
+diff --git a/installer/conf/omsagent.d/mongo.conf b/installer/conf/omsagent.d/mongo.conf
+index a9178b0..bd25312 100644
+--- a/installer/conf/omsagent.d/mongo.conf
++++ b/installer/conf/omsagent.d/mongo.conf
+@@ -31,7 +31,7 @@
+   log_level info
+   buffer_chunk_limit 5m
+   buffer_type file
+-  buffer_path /var/opt/microsoft/omsagent/state/out_oms_api_workload_mongo*.buffer
++  buffer_path /var/vcap/packages/omsagent/var/state/out_oms_api_workload_mongo*.buffer
+   buffer_queue_limit 10
+   flush_interval 20s
+   retry_limit 10
+diff --git a/installer/conf/omsagent.d/monitor.conf b/installer/conf/omsagent.d/monitor.conf
+index 29fe50f..7444870 100644
+--- a/installer/conf/omsagent.d/monitor.conf
++++ b/installer/conf/omsagent.d/monitor.conf
+@@ -19,7 +19,7 @@
+   log_level info
+   buffer_chunk_limit 1m
+   buffer_type file
+-  buffer_path /var/opt/microsoft/omsagent/state/out_oms_health*.buffer
++  buffer_path /var/vcap/packages/omsagent/var/state/out_oms_health*.buffer
+   buffer_queue_limit 5
+   buffer_queue_full_action drop_oldest_chunk
+   flush_interval 20s
+diff --git a/installer/conf/omsagent.d/mysql.conf b/installer/conf/omsagent.d/mysql.conf
+index ef0ed56..fd9db4e 100644
+--- a/installer/conf/omsagent.d/mysql.conf
++++ b/installer/conf/omsagent.d/mysql.conf
+@@ -18,7 +18,7 @@
+   tag oms.api.MySQL.General.logs
+   format /^((?<Timestamp>[\d\-]{4,10}\s{0,4}\d{0,2}:\d{0,2}:\d{0,2}|[\d\-T:\.Z]{20,30})|\s{0,10})\s+(?<Id>\d+)\s+(?<Command>\w+)\s+(?<Arguments>\z|.+)$/
+   path /var/log/mysql/mysql.log
+-  pos_file /var/opt/microsoft/omsagent/state/var_log_mysql_log.pos
++  pos_file /var/vcap/packages/omsagent/var/state/var_log_mysql_log.pos
+ </source>
+ 
+ # MySQL Error Log
+@@ -28,7 +28,7 @@
+   tag oms.api.MySQL.Error.logs
+   format /^(?<Timestamp>[\d\-]{4,10}\s{0,4}\d{0,2}:\d{0,2}:\d{0,2}|[\d\-T:\.Z]{20,30})\s{0,4}(?<Id>\d+)?\s{0,4}(\[(?<Command>[A-Za-z]+)\])?\s+(?<Arguments>.*)$/
+   path /var/log/mysql/error.log
+-  pos_file /var/opt/microsoft/omsagent/state/var_log_mysql_error_log.pos
++  pos_file /var/vcap/packages/omsagent/var/state/var_log_mysql_error_log.pos
+ </source>
+ 
+ # MySQL Slow Query Log
+@@ -44,7 +44,7 @@
+   format4 /^(?<Query>[^;]*;)/
+   multiline_flush_interval 4s
+   path /var/log/mysql/mysql-slow.log
+-  pos_file /var/opt/microsoft/omsagent/state/var_log_mysql_slow_log.pos
++  pos_file /var/vcap/packages/omsagent/var/state/var_log_mysql_slow_log.pos
+   types QueryTime:float,LockTime:float,RowsSent:integer,RowsExamined:integer
+ </source>
+ 
+@@ -96,7 +96,7 @@
+   log_level info
+   buffer_chunk_limit 5m
+   buffer_type file
+-  buffer_path /var/opt/microsoft/omsagent/state/out_oms_api_mysql_logs*.buffer
++  buffer_path /var/vcap/packages/omsagent/var/state/out_oms_api_mysql_logs*.buffer
+   buffer_queue_limit 10
+   flush_interval 20s
+   retry_limit 10
+diff --git a/installer/conf/omsagent.d/patch_management.conf b/installer/conf/omsagent.d/patch_management.conf
+index ef68d29..1fd7ac5 100644
+--- a/installer/conf/omsagent.d/patch_management.conf
++++ b/installer/conf/omsagent.d/patch_management.conf
+@@ -1,7 +1,7 @@
+ <source>
+   type exec
+   tag oms.patch_management
+-  command /opt/microsoft/omsconfig/Scripts/PerformInventory.py --InMOF /etc/opt/microsoft/omsagent/conf/omsagent.d/patch_management_inventory.mof --OutXML /etc/opt/omi/conf/omsconfig/configuration/CompletePackageInventory.xml > /dev/null && cat /etc/opt/omi/conf/omsconfig/configuration/CompletePackageInventory.xml
++  command /var/vcap/packages/omsconfig/opt/Scripts/PerformInventory.py --InMOF /var/vcap/packages/omsagent/etc/conf/omsagent.d/patch_management_inventory.mof --OutXML /var/vcap/packages/omi/etc/conf/omsconfig/configuration/CompletePackageInventory.xml > /dev/null && cat /var/vcap/packages/omi/etc/conf/omsconfig/configuration/CompletePackageInventory.xml
+   format tsv
+   keys xml
+   run_interval 3h
+@@ -10,7 +10,7 @@
+ <source>
+   type exec
+   tag oms.patch_management_immediate_run
+-  command /opt/microsoft/omsconfig/Scripts/PerformInventory.py --InMOF /etc/opt/microsoft/omsagent/conf/omsagent.d/patch_management_inventory.mof --OutXML /etc/opt/omi/conf/omsconfig/configuration/CompletePackageInventory.xml > /dev/null && cat /etc/opt/omi/conf/omsconfig/configuration/CompletePackageInventory.xml
++  command /var/vcap/packages/omsconfig/opt/Scripts/PerformInventory.py --InMOF /var/vcap/packages/omsagent/etc/conf/omsagent.d/patch_management_inventory.mof --OutXML /var/vcap/packages/omi/etc/conf/omsconfig/configuration/CompletePackageInventory.xml > /dev/null && cat /var/vcap/packages/omi/etc/conf/omsconfig/configuration/CompletePackageInventory.xml
+   format tsv
+   keys xml
+ </source>
+diff --git a/installer/conf/omsagent.d/vmware_esxi.conf b/installer/conf/omsagent.d/vmware_esxi.conf
+index c60dddf..20b9a35 100644
+--- a/installer/conf/omsagent.d/vmware_esxi.conf
++++ b/installer/conf/omsagent.d/vmware_esxi.conf
+@@ -25,7 +25,7 @@
+ 
+   buffer_chunk_limit 2m
+   buffer_type file
+-  buffer_path /var/opt/microsoft/omsagent/state/out_oms_api_vmware_logs*.buffer
++  buffer_path /var/vcap/packages/omsagent/var/state/out_oms_api_vmware_logs*.buffer
+   buffer_queue_limit 10
+   flush_interval 20s
+   retry_limit 10
+diff --git a/installer/conf/sudoers b/installer/conf/sudoers
+index 045a1be..0f56944 100644
+--- a/installer/conf/sudoers
++++ b/installer/conf/sudoers
+@@ -2,25 +2,25 @@
+ Defaults:omsagent !requiretty
+ 
+ #update and restart syslog
+-omsagent ALL=(ALL) NOPASSWD: /opt/microsoft/omsconfig/Scripts/OMSRsyslog.post.sh
+-omsagent ALL=(ALL) NOPASSWD: /opt/microsoft/omsconfig/Scripts/OMSSysklog.post.sh
+-omsagent ALL=(ALL) NOPASSWD: /opt/microsoft/omsconfig/Scripts/OMSSyslog-ng.post.sh
++omsagent ALL=(ALL) NOPASSWD: /var/vcap/packages/omsconfig/opt/Scripts/OMSRsyslog.post.sh
++omsagent ALL=(ALL) NOPASSWD: /var/vcap/packages/omsconfig/opt/Scripts/OMSSysklog.post.sh
++omsagent ALL=(ALL) NOPASSWD: /var/vcap/packages/omsconfig/opt/Scripts/OMSSyslog-ng.post.sh
+ 
+ #Service status
+-omsagent ALL=(ALL) NOPASSWD: /opt/microsoft/omsconfig/Scripts/OMSServiceStat.sh
+-omsagent ALL=(ALL) NOPASSWD: /opt/microsoft/omsconfig/Scripts/OMSServiceStatAll.sh
++omsagent ALL=(ALL) NOPASSWD: /var/vcap/packages/omsconfig/opt/Scripts/OMSServiceStat.sh
++omsagent ALL=(ALL) NOPASSWD: /var/vcap/packages/omsconfig/opt/Scripts/OMSServiceStatAll.sh
+ 
+ # AvailableUpdates
+-omsagent ALL=(ALL) NOPASSWD: /opt/microsoft/omsconfig/Scripts/OMSYumUpdates.sh
+-omsagent ALL=(ALL) NOPASSWD: /opt/microsoft/omsconfig/Scripts/OMSZypperUpdates.sh
+-omsagent ALL=(ALL) NOPASSWD: /opt/microsoft/omsconfig/Scripts/OMSAptUpdates.sh
++omsagent ALL=(ALL) NOPASSWD: /var/vcap/packages/omsconfig/opt/Scripts/OMSYumUpdates.sh
++omsagent ALL=(ALL) NOPASSWD: /var/vcap/packages/omsconfig/opt/Scripts/OMSZypperUpdates.sh
++omsagent ALL=(ALL) NOPASSWD: /var/vcap/packages/omsconfig/opt/Scripts/OMSAptUpdates.sh
+ 
+ #restart omsagent daemon
+-omsagent ALL=(ALL) NOPASSWD: /opt/microsoft/omsagent/bin/service_control
++omsagent ALL=(ALL) NOPASSWD: /var/vcap/packages/omsagent/opt/bin/service_control
+ 
+ #Inspect Docker containers (filter_docker_log.rb)
+ omsagent ALL=(ALL) NOPASSWD: /usr/bin/docker inspect *
+ 
+ #run tailfilereader.rb
+-omsagent ALL=(ALL) NOPASSWD: /opt/microsoft/omsagent/ruby/bin/ruby /opt/microsoft/omsagent/bin/tailfilereader.rb *
++omsagent ALL=(ALL) NOPASSWD: /var/vcap/packages/omsagent/opt/ruby/bin/ruby /var/vcap/packages/omsagent/opt/bin/tailfilereader.rb *
+ # End sudo configuration for omsagent
+diff --git a/installer/datafiles/base_omsagent.data b/installer/datafiles/base_omsagent.data
+index eb83c12..2062c60 100644
+--- a/installer/datafiles/base_omsagent.data
++++ b/installer/datafiles/base_omsagent.data
+@@ -1,9 +1,9 @@
+ %Variables
+ SHELL_HEADER:            '#!/bin/sh'
+-OMSHOME:                 '/opt/microsoft/omsagent'
+-CONF_DIR:                '/etc/opt/microsoft/omsagent/conf'
++OMSHOME:                 '/var/vcap/packages/omsagent/opt'
++CONF_DIR:                '/var/vcap/packages/omsagent/etc/conf'
+ 
+-SHORT_NAME:              'omsagent'
++SHORT_NAME:              'omsagent-bosh'
+ SHORT_NAME_PREFIX:       'MSFT'
+ LONG_NAME:               'Microsoft Operations Management Suite for UNIX/Linux agent'
+ GROUP:                   'Applications/System'
+@@ -18,110 +18,111 @@ MAINTAINER:              'Microsoft Corporation'
+ %Files
+ /etc/logrotate.d/omsagent;                                              installer/conf/logrotate.conf;                         644; root; root
+ 
+-/etc/opt/microsoft/omsagent/sysconf/README;                             installer/conf/sysconf.readme;                         644; root; root
+-/etc/opt/microsoft/omsagent/sysconf/omsagent.conf;                      installer/conf/omsagent.conf;                          644; root; root
+-/etc/opt/microsoft/omsagent/sysconf/installinfo.txt;                    installer/conf/installinfo.txt;                        644; root; root; conffile
+-/etc/opt/microsoft/omsagent/sysconf/omi_mapping.json;                   installer/conf/omi_mapping.json;                       644; root; root
+-/etc/opt/microsoft/omsagent/sysconf/omsagent.d/change_tracking.conf;    installer/conf/omsagent.d/change_tracking.conf;        644; root; root
+-/etc/opt/microsoft/omsagent/sysconf/omsagent.d/change_tracking_inventory.mof;    installer/conf/omsagent.d/change_tracking_inventory.mof;    644; root; root
+-/etc/opt/microsoft/omsagent/sysconf/omsagent.d/monitor.conf;            installer/conf/omsagent.d/monitor.conf;                644; root; root
+-/etc/opt/microsoft/omsagent/sysconf/omsagent.d/patch_management.conf;      installer/conf/omsagent.d/patch_management.conf;          644; root; root
+-/etc/opt/microsoft/omsagent/sysconf/omsagent.d/patch_management_inventory.mof;  installer/conf/omsagent.d/patch_management_inventory.mof;        644; root; root
+-
+-/etc/opt/microsoft/omsagent/sysconf/omsagent.d/oms.conf;                installer/conf/oms.conf;                               644; root; root
+-/etc/opt/microsoft/omsagent/sysconf/omsagent.d/collectd.conf;           installer/conf/omsagent.d/collectd.conf;               644; root; root
+-/etc/opt/microsoft/omsagent/sysconf/omsagent.d/statsd.conf;             installer/conf/omsagent.d/statsd.conf;                 644; root; root
+-/etc/opt/microsoft/omsagent/sysconf/omsagent.d/auditlog.conf;           installer/conf/omsagent.d/auditlog.conf;               644; root; root
+-/etc/opt/microsoft/omsagent/sysconf/omsagent.d/mysql.conf;              installer/conf/omsagent.d/mysql.conf;                  644; root; root
+-/etc/opt/microsoft/omsagent/sysconf/omsagent.d/apache_logs.conf;        installer/conf/omsagent.d/apache_logs.conf;            644; root; root
+-/etc/opt/microsoft/omsagent/sysconf/omsagent.d/mongo.conf;              installer/conf/omsagent.d/mongo.conf;                  644; root; root
+-/etc/opt/microsoft/omsagent/sysconf/omsagent.d/vmware_esxi.conf;        installer/conf/omsagent.d/vmware_esxi.conf;            644; root; root
+-/etc/opt/microsoft/omsagent/sysconf/omsagent.d/operation.conf;          installer/conf/omsagent.d/operation.conf;              644; root; root
+-
+-/opt/microsoft/omsagent/LICENSE;                                        LICENSE;                                               444; root; root
+-
+-/opt/microsoft/omsagent/bin/auth_key.rb;                                installer/scripts/auth_key.rb;                         744; root; root
+-/opt/microsoft/omsagent/bin/omsadmin.sh;                                installer/scripts/omsadmin.sh;                         755; root; root
+-/opt/microsoft/omsagent/bin/service_control;                            installer/scripts/service_control;                     755; root; root
+-/opt/microsoft/omsagent/bin/uninstall;                                  installer/scripts/uninstall.sh;                        755; root; root
+-/opt/microsoft/omsagent/bin/tailfilereader.rb;                          installer/scripts/tailfilereader.rb;                   744; root; root
+-
+-/opt/microsoft/omsagent/plugin/filter_syslog.rb;                        source/code/plugins/filter_syslog.rb;                  744; root; root
+-/opt/microsoft/omsagent/plugin/out_oms.rb;                              source/code/plugins/out_oms.rb;                        744; root; root
+-/opt/microsoft/omsagent/plugin/in_omi.rb;                               source/code/plugins/in_omi.rb;                         744; root; root
+-/opt/microsoft/omsagent/plugin/in_oms_omi.rb;                           source/code/plugins/in_oms_omi.rb;                     744; root; root
+-/opt/microsoft/omsagent/plugin/oms_omi_lib.rb;                          source/code/plugins/oms_omi_lib.rb;                    744; root; root
+-/opt/microsoft/omsagent/plugin/oms_common.rb;                           source/code/plugins/oms_common.rb;                     744; root; root
+-/opt/microsoft/omsagent/plugin/Libomi.so;                               intermediate/${{BUILD_CONFIGURATION}}/Libomi.so;       744; root; root
+-/opt/microsoft/omsagent/plugin/filter_nagios_log.rb;                    source/code/plugins/filter_nagios_log.rb;              744; root; root
+-/opt/microsoft/omsagent/plugin/nagios_parser_lib.rb;                    source/code/plugins/nagios_parser_lib.rb;              744; root; root
+-/opt/microsoft/omsagent/plugin/filter_omi.rb;                           source/code/plugins/filter_omi.rb;                     744; root; root
+-/opt/microsoft/omsagent/plugin/omi_lib.rb;                              source/code/plugins/omi_lib.rb;                        744; root; root
+-/opt/microsoft/omsagent/plugin/omslog.rb;                               source/code/plugins/omslog.rb;                         744; root; root
+-/opt/microsoft/omsagent/plugin/in_zabbix.rb;                            source/code/plugins/in_zabbix.rb;                      744; root; root
+-/opt/microsoft/omsagent/plugin/zabbix_lib.rb;                           source/code/plugins/zabbix_lib.rb;                     744; root; root
+-/opt/microsoft/omsagent/plugin/zabbix_client.rb;                        source/code/plugins/zabbix_client.rb;                  744; root; root
+-/opt/microsoft/omsagent/plugin/zabbixapi.rb;                            source/code/plugins/zabbixapi.rb;                      744; root; root
+-/opt/microsoft/omsagent/plugin/oms_configuration.rb;                    source/code/plugins/oms_configuration.rb;              744; root; root
+-/opt/microsoft/omsagent/plugin/out_oms_blob.rb;                         source/code/plugins/out_oms_blob.rb;                   744; root; root
+-/opt/microsoft/omsagent/plugin/out_oms_api.rb;                          source/code/plugins/out_oms_api.rb;                    744; root; root
+-/opt/microsoft/omsagent/plugin/in_sudo_tail.rb;                         source/code/plugins/in_sudo_tail.rb;                   744; root; root
+-
+-/opt/microsoft/omsagent/plugin/security_lib.rb;                         source/code/plugins/security_lib.rb;                   744; root; root
+-/opt/microsoft/omsagent/plugin/filter_syslog_security.rb;               source/code/plugins/filter_syslog_security.rb;         744; root; root
+-/opt/microsoft/omsagent/plugin/filter_changetracking.rb;                source/code/plugins/filter_changetracking.rb;          744; root; root
+-/opt/microsoft/omsagent/plugin/changetracking_lib.rb;                   source/code/plugins/changetracking_lib.rb;             744; root; root
+-/opt/microsoft/omsagent/plugin/filter_collectd.rb;                      source/code/plugins/filter_collectd.rb;                744; root; root
+-/opt/microsoft/omsagent/plugin/collectd_lib.rb;                         source/code/plugins/collectd_lib.rb;                   744; root; root
+-/opt/microsoft/omsagent/plugin/filter_operation.rb;                     source/code/plugins/filter_operation.rb;               744; root; root
+-/opt/microsoft/omsagent/plugin/operation_lib.rb;                        source/code/plugins/operation_lib.rb;                  744; root; root
+-/opt/microsoft/omsagent/plugin/in_oms_heartbeat.rb;                     source/code/plugins/in_oms_heartbeat.rb;               744; root; root
+-/opt/microsoft/omsagent/plugin/heartbeat_lib.rb;                        source/code/plugins/heartbeat_lib.rb;                  744; root; root
+-/opt/microsoft/omsagent/plugin/filter_patch_management.rb;              source/code/plugins/filter_patch_management.rb;        744; root; root
+-/opt/microsoft/omsagent/plugin/patch_management_lib.rb;                 source/code/plugins/patch_management_lib.rb;           744; root; root
+-/opt/microsoft/omsagent/plugin/filter_flatten.rb;                       source/code/plugins/filter_flatten.rb;                 744; root; root
+-/opt/microsoft/omsagent/plugin/flattenjson_lib.rb;                      source/code/plugins/flattenjson_lib.rb;                744; root; root
+-/opt/microsoft/omsagent/plugin/statsd_lib.rb;                           source/code/plugins/statsd_lib.rb;                     744; root; root
+-/opt/microsoft/omsagent/plugin/out_oms_statsd_aggregator.rb;            source/code/plugins/out_oms_statsd_aggregator.rb;      744; root; root
+-/opt/microsoft/omsagent/plugin/auditlog_lib.rb;                         source/code/plugins/auditlog_lib.rb;                   744; root; root
+-/opt/microsoft/omsagent/plugin/parser_auditlog.rb;                      source/code/plugins/parser_auditlog.rb;                744; root; root
+-/opt/microsoft/omsagent/plugin/mongostat_lib.rb;                        source/code/plugins/mongostat_lib.rb;                  744; root; root
+-/opt/microsoft/omsagent/plugin/in_mongostat.rb;                         source/code/plugins/in_mongostat.rb;                   744; root; root
+-/opt/microsoft/omsagent/plugin/mysql_workload_lib.rb;                   source/code/plugins/mysql_workload_lib.rb;             744; root; root
+-/opt/microsoft/omsagent/plugin/in_mysql_workload.rb;                    source/code/plugins/in_mysql_workload.rb;              744; root; root
+-/opt/microsoft/omsagent/plugin/parser_vmware_logs.rb;                   source/code/plugins/parser_vmware_logs.rb;             744; root; root
+-/opt/microsoft/omsagent/plugin/in_dsc_monitor.rb;                       source/code/plugins/in_dsc_monitor.rb;                 744; root; root
+-/opt/microsoft/omsagent/plugin/agent_topology_request_script.rb;        source/code/plugins/agent_topology_request_script.rb;  744; root; root
++/var/vcap/packages/omsagent/etc/sysconf/README;                             installer/conf/sysconf.readme;                         644; root; root
++/var/vcap/packages/omsagent/etc/sysconf/omsagent.conf;                      installer/conf/omsagent.conf;                          644; root; root
++/var/vcap/packages/omsagent/etc/sysconf/installinfo.txt;                    installer/conf/installinfo.txt;                        644; root; root; conffile
++/var/vcap/packages/omsagent/etc/sysconf/omi_mapping.json;                   installer/conf/omi_mapping.json;                       644; root; root
++/var/vcap/packages/omsagent/etc/sysconf/omsagent.d/change_tracking.conf;    installer/conf/omsagent.d/change_tracking.conf;        644; root; root
++/var/vcap/packages/omsagent/etc/sysconf/omsagent.d/change_tracking_inventory.mof;    installer/conf/omsagent.d/change_tracking_inventory.mof;    644; root; root
++/var/vcap/packages/omsagent/etc/sysconf/omsagent.d/monitor.conf;            installer/conf/omsagent.d/monitor.conf;                644; root; root
++/var/vcap/packages/omsagent/etc/sysconf/omsagent.d/patch_management.conf;      installer/conf/omsagent.d/patch_management.conf;          644; root; root
++/var/vcap/packages/omsagent/etc/sysconf/omsagent.d/patch_management_inventory.mof;  installer/conf/omsagent.d/patch_management_inventory.mof;        644; root; root
++
++/var/vcap/packages/omsagent/etc/sysconf/omsagent.d/oms.conf;                installer/conf/oms.conf;                               644; root; root
++/var/vcap/packages/omsagent/etc/sysconf/omsagent.d/collectd.conf;           installer/conf/omsagent.d/collectd.conf;               644; root; root
++/var/vcap/packages/omsagent/etc/sysconf/omsagent.d/statsd.conf;             installer/conf/omsagent.d/statsd.conf;                 644; root; root
++/var/vcap/packages/omsagent/etc/sysconf/omsagent.d/auditlog.conf;           installer/conf/omsagent.d/auditlog.conf;               644; root; root
++/var/vcap/packages/omsagent/etc/sysconf/omsagent.d/mysql.conf;              installer/conf/omsagent.d/mysql.conf;                  644; root; root
++/var/vcap/packages/omsagent/etc/sysconf/omsagent.d/apache_logs.conf;        installer/conf/omsagent.d/apache_logs.conf;            644; root; root
++/var/vcap/packages/omsagent/etc/sysconf/omsagent.d/mongo.conf;              installer/conf/omsagent.d/mongo.conf;                  644; root; root
++/var/vcap/packages/omsagent/etc/sysconf/omsagent.d/vmware_esxi.conf;        installer/conf/omsagent.d/vmware_esxi.conf;            644; root; root
++/var/vcap/packages/omsagent/etc/sysconf/omsagent.d/operation.conf;          installer/conf/omsagent.d/operation.conf;              644; root; root
++
++/var/vcap/packages/omsagent/opt/LICENSE;                                        LICENSE;                                               444; root; root
++
++/var/vcap/packages/omsagent/opt/bin/auth_key.rb;                                installer/scripts/auth_key.rb;                         744; root; root
++/var/vcap/packages/omsagent/opt/bin/omsadmin.sh;                                installer/scripts/omsadmin.sh;                         755; root; root
++/var/vcap/packages/omsagent/opt/bin/service_control;                            installer/scripts/service_control;                     755; root; root
++/var/vcap/packages/omsagent/opt/bin/uninstall;                                  installer/scripts/uninstall.sh;                        755; root; root
++/var/vcap/packages/omsagent/opt/bin/tailfilereader.rb;                          installer/scripts/tailfilereader.rb;                   744; root; root
++
++/var/vcap/packages/omsagent/opt/plugin/filter_syslog.rb;                        source/code/plugins/filter_syslog.rb;                  744; root; root
++/var/vcap/packages/omsagent/opt/plugin/out_oms.rb;                              source/code/plugins/out_oms.rb;                        744; root; root
++/var/vcap/packages/omsagent/opt/plugin/in_omi.rb;                               source/code/plugins/in_omi.rb;                         744; root; root
++/var/vcap/packages/omsagent/opt/plugin/in_oms_omi.rb;                           source/code/plugins/in_oms_omi.rb;                     744; root; root
++/var/vcap/packages/omsagent/opt/plugin/oms_omi_lib.rb;                          source/code/plugins/oms_omi_lib.rb;                    744; root; root
++/var/vcap/packages/omsagent/opt/plugin/oms_common.rb;                           source/code/plugins/oms_common.rb;                     744; root; root
++/var/vcap/packages/omsagent/opt/plugin/Libomi.so;                               intermediate/${{BUILD_CONFIGURATION}}/Libomi.so;       744; root; root
++/var/vcap/packages/omsagent/opt/plugin/filter_nagios_log.rb;                    source/code/plugins/filter_nagios_log.rb;              744; root; root
++/var/vcap/packages/omsagent/opt/plugin/nagios_parser_lib.rb;                    source/code/plugins/nagios_parser_lib.rb;              744; root; root
++/var/vcap/packages/omsagent/opt/plugin/filter_omi.rb;                           source/code/plugins/filter_omi.rb;                     744; root; root
++/var/vcap/packages/omsagent/opt/plugin/omi_lib.rb;                              source/code/plugins/omi_lib.rb;                        744; root; root
++/var/vcap/packages/omsagent/opt/plugin/omslog.rb;                               source/code/plugins/omslog.rb;                         744; root; root
++/var/vcap/packages/omsagent/opt/plugin/in_zabbix.rb;                            source/code/plugins/in_zabbix.rb;                      744; root; root
++/var/vcap/packages/omsagent/opt/plugin/zabbix_lib.rb;                           source/code/plugins/zabbix_lib.rb;                     744; root; root
++/var/vcap/packages/omsagent/opt/plugin/zabbix_client.rb;                        source/code/plugins/zabbix_client.rb;                  744; root; root
++/var/vcap/packages/omsagent/opt/plugin/zabbixapi.rb;                            source/code/plugins/zabbixapi.rb;                      744; root; root
++/var/vcap/packages/omsagent/opt/plugin/oms_configuration.rb;                    source/code/plugins/oms_configuration.rb;              744; root; root
++/var/vcap/packages/omsagent/opt/plugin/out_oms_blob.rb;                         source/code/plugins/out_oms_blob.rb;                   744; root; root
++/var/vcap/packages/omsagent/opt/plugin/out_oms_api.rb;                          source/code/plugins/out_oms_api.rb;                    744; root; root
++/var/vcap/packages/omsagent/opt/plugin/in_sudo_tail.rb;                         source/code/plugins/in_sudo_tail.rb;                   744; root; root
++
++/var/vcap/packages/omsagent/opt/plugin/security_lib.rb;                         source/code/plugins/security_lib.rb;                   744; root; root
++/var/vcap/packages/omsagent/opt/plugin/filter_syslog_security.rb;               source/code/plugins/filter_syslog_security.rb;         744; root; root
++/var/vcap/packages/omsagent/opt/plugin/filter_changetracking.rb;                source/code/plugins/filter_changetracking.rb;          744; root; root
++/var/vcap/packages/omsagent/opt/plugin/changetracking_lib.rb;                   source/code/plugins/changetracking_lib.rb;             744; root; root
++/var/vcap/packages/omsagent/opt/plugin/filter_collectd.rb;                      source/code/plugins/filter_collectd.rb;                744; root; root
++/var/vcap/packages/omsagent/opt/plugin/collectd_lib.rb;                         source/code/plugins/collectd_lib.rb;                   744; root; root
++/var/vcap/packages/omsagent/opt/plugin/filter_operation.rb;                     source/code/plugins/filter_operation.rb;               744; root; root
++/var/vcap/packages/omsagent/opt/plugin/operation_lib.rb;                        source/code/plugins/operation_lib.rb;                  744; root; root
++/var/vcap/packages/omsagent/opt/plugin/in_oms_heartbeat.rb;                     source/code/plugins/in_oms_heartbeat.rb;               744; root; root
++/var/vcap/packages/omsagent/opt/plugin/heartbeat_lib.rb;                        source/code/plugins/heartbeat_lib.rb;                  744; root; root
++/var/vcap/packages/omsagent/opt/plugin/filter_patch_management.rb;              source/code/plugins/filter_patch_management.rb;        744; root; root
++/var/vcap/packages/omsagent/opt/plugin/patch_management_lib.rb;                 source/code/plugins/patch_management_lib.rb;           744; root; root
++/var/vcap/packages/omsagent/opt/plugin/filter_flatten.rb;                       source/code/plugins/filter_flatten.rb;                 744; root; root
++/var/vcap/packages/omsagent/opt/plugin/flattenjson_lib.rb;                      source/code/plugins/flattenjson_lib.rb;                744; root; root
++/var/vcap/packages/omsagent/opt/plugin/statsd_lib.rb;                           source/code/plugins/statsd_lib.rb;                     744; root; root
++/var/vcap/packages/omsagent/opt/plugin/out_oms_statsd_aggregator.rb;            source/code/plugins/out_oms_statsd_aggregator.rb;      744; root; root
++/var/vcap/packages/omsagent/opt/plugin/auditlog_lib.rb;                         source/code/plugins/auditlog_lib.rb;                   744; root; root
++/var/vcap/packages/omsagent/opt/plugin/parser_auditlog.rb;                      source/code/plugins/parser_auditlog.rb;                744; root; root
++/var/vcap/packages/omsagent/opt/plugin/mongostat_lib.rb;                        source/code/plugins/mongostat_lib.rb;                  744; root; root
++/var/vcap/packages/omsagent/opt/plugin/in_mongostat.rb;                         source/code/plugins/in_mongostat.rb;                   744; root; root
++/var/vcap/packages/omsagent/opt/plugin/mysql_workload_lib.rb;                   source/code/plugins/mysql_workload_lib.rb;             744; root; root
++/var/vcap/packages/omsagent/opt/plugin/in_mysql_workload.rb;                    source/code/plugins/in_mysql_workload.rb;              744; root; root
++/var/vcap/packages/omsagent/opt/plugin/parser_vmware_logs.rb;                   source/code/plugins/parser_vmware_logs.rb;             744; root; root
++/var/vcap/packages/omsagent/opt/plugin/in_dsc_monitor.rb;                       source/code/plugins/in_dsc_monitor.rb;                 744; root; root
++/var/vcap/packages/omsagent/opt/plugin/agent_topology_request_script.rb;        source/code/plugins/agent_topology_request_script.rb;  744; root; root
+ 
+ %Links
+-/opt/microsoft/omsagent/bin/omsagent; /opt/microsoft/omsagent/ruby/bin/fluentd; 755; root; root
++/var/vcap/packages/omsagent/opt/bin/omsagent; /var/vcap/packages/omsagent/opt/ruby/bin/fluentd; 755; root; root
+ 
+ %Directories
+-/opt;                                                   755; root; root; sysdir
++%% /opt;                                                   755; root; root; sysdir
+ /etc;                                                   755; root; root; sysdir
+ /etc/logrotate.d;                                       755; root; root; sysdir
+-/etc/opt;                                               755; root; root; sysdir
+-/var;                                                   755; root; root; sysdir
+-/var/opt;                                               755; root; root; sysdir
++%% /etc/opt;                                               755; root; root; sysdir
++%% /var;                                                   755; root; root; sysdir
++%% /var/opt;                                               755; root; root; sysdir
+ 
+-/etc/opt/microsoft;                                     755; root; root; sysdir
+-/etc/opt/microsoft/omsagent;                            755; root; root
+-/etc/opt/microsoft/omsagent/sysconf;                    755; root; root
+-/etc/opt/microsoft/omsagent/sysconf/omsagent.d;         755; root; root
++%% /etc/opt/microsoft;                                     755; root; root; sysdir
++/var/vcap/packages/omsagent;                            755; root; root
++/var/vcap/packages/omsagent/etc;                            755; root; root
++/var/vcap/packages/omsagent/etc/sysconf;                    755; root; root
++/var/vcap/packages/omsagent/etc/sysconf/omsagent.d;         755; root; root
+ 
+-/opt/microsoft;                                         755; root; root; sysdir
+-/opt/microsoft/omsagent;                                755; root; root
+-/opt/microsoft/omsagent/bin;                            755; root; root
+-/opt/microsoft/omsagent/plugin;                         755; root; root
++%% /opt/microsoft;                                         755; root; root; sysdir
++/var/vcap/packages/omsagent/opt;                                755; root; root
++/var/vcap/packages/omsagent/opt/bin;                            755; root; root
++/var/vcap/packages/omsagent/opt/plugin;                         755; root; root
+ 
+-/var/opt/microsoft;                                     755; root; root; sysdir
++%% /var/opt/microsoft;                                     755; root; root; sysdir
+ 
+ %Dependencies
+ 
+ %Postinstall_100
+ WriteInstallInfo() {
+-    echo "${{VERSION}}-${{RELEASE}} ${{VERSION_IDENT}}" > /etc/opt/microsoft/omsagent/sysconf/installinfo.txt
+-    date +%Y-%m-%dT%T.0Z >> /etc/opt/microsoft/omsagent/sysconf/installinfo.txt
++    echo "${{VERSION}}-${{RELEASE}} ${{VERSION_IDENT}}" > /var/vcap/packages/omsagent/etc/sysconf/installinfo.txt
++    date +%Y-%m-%dT%T.0Z >> /var/vcap/packages/omsagent/etc/sysconf/installinfo.txt
+ }
+ WriteInstallInfo
+ 
+@@ -129,22 +130,26 @@ WriteInstallInfo
+ # owned by omsagent account. So create them as part of Postinstall, after the
+ # service account is created.
+ 
+-mkdir -m 700 /etc/opt/microsoft/omsagent/certs/ 2> /dev/null || true
+-chown -R omsagent:omsagent /etc/opt/microsoft/omsagent/certs
++mkdir -m 700 /var/vcap/packages/omsagent/etc/certs/ 2> /dev/null || true
++chown -R omsagent:omsagent /var/vcap/packages/omsagent/etc/certs
+ 
+-mkdir -m 755 /var/opt/microsoft/omsagent        2> /dev/null || true
+-mkdir -m 755 /var/opt/microsoft/omsagent/log    2> /dev/null || true
+-mkdir -m 755 /var/opt/microsoft/omsagent/run    2> /dev/null || true
+-mkdir -m 755 /var/opt/microsoft/omsagent/state  2> /dev/null || true
+-mkdir -m 755 /var/opt/microsoft/omsagent/tmp    2> /dev/null || true
+-chown -R omsagent:omsagent /var/opt/microsoft/omsagent
++mkdir -m 755 /var/vcap/packages/omsagent/var        2> /dev/null || true
++mkdir -m 755 /var/vcap/sys/log/omsagent    2> /dev/null || true
++mkdir -m 755 /var/vcap/sys/run/omsagent    2> /dev/null || true
++mkdir -m 755 /var/vcap/packages/omsagent/var/state  2> /dev/null || true
++mkdir -m 755 /var/vcap/packages/omsagent/var/tmp    2> /dev/null || true
++mkdir -m 755 /var/vcap/packages/omsagent/var/run    2> /dev/null || true
++mkdir -m 755 /var/vcap/packages/omsagent/var/log    2> /dev/null || true
++chown -R omsagent:omsagent /var/vcap/packages/omsagent/var
++chown -R omsagent:omsagent /var/vcap/sys/log/omsagent
++chown -R omsagent:omsagent /var/vcap/sys/run/omsagent
+ 
+-# Ditto for conf directory in /etc/opt/microsoft/omsagent/conf ...
++# Ditto for conf directory in /var/vcap/packages/omsagent/etc/conf ...
+ 
+ mkdir -m 755 ${{CONF_DIR}} 2> /dev/null || true
+ 
+ if [ ! -f ${{CONF_DIR}}/omsagent.conf ]; then
+-   cp /etc/opt/microsoft/omsagent/sysconf/omsagent.conf ${{CONF_DIR}}
++   cp /var/vcap/packages/omsagent/etc/sysconf/omsagent.conf ${{CONF_DIR}}
+ fi
+ 
+ # Folder for omsagent.conf includes
+@@ -152,30 +157,30 @@ mkdir -m 755 ${{CONF_DIR}}/omsagent.d 2> /dev/null || true
+ 
+ # Copy monitor plugins conf file by default
+ if [ ! -f ${{CONF_DIR}}/omsagent.d/monitor.conf ]; then
+-   cp /etc/opt/microsoft/omsagent/sysconf/omsagent.d/monitor.conf ${{CONF_DIR}}/omsagent.d/monitor.conf
++   cp /var/vcap/packages/omsagent/etc/sysconf/omsagent.d/monitor.conf ${{CONF_DIR}}/omsagent.d/monitor.conf
+ fi
+ 
+ # Copy operation.conf file by default
+ if [ ! -f ${{CONF_DIR}}/omsagent.d/operation.conf ]; then
+-   cp /etc/opt/microsoft/omsagent/sysconf/omsagent.d/operation.conf ${{CONF_DIR}}/omsagent.d/operation.conf
++   cp /var/vcap/packages/omsagent/etc/sysconf/omsagent.d/operation.conf ${{CONF_DIR}}/omsagent.d/operation.conf
+ fi
+ 
+ # Copy over omi_mapping.json
+ if [ ! -f ${{CONF_DIR}}/omsagent.d/omi_mapping.json ]; then
+-   cp /etc/opt/microsoft/omsagent/sysconf/omi_mapping.json ${{CONF_DIR}}/omsagent.d/omi_mapping.json
++   cp /var/vcap/packages/omsagent/etc/sysconf/omi_mapping.json ${{CONF_DIR}}/omsagent.d/omi_mapping.json
+ fi
+ 
+ # Copy over standalone plugin configurations
+-#cp /etc/opt/microsoft/omsagent/sysconf/omsagent.d/* ${{CONF_DIR}}/omsagent.d
++#cp /var/vcap/packages/omsagent/etc/sysconf/omsagent.d/* ${{CONF_DIR}}/omsagent.d
+ 
+ # Copy collectd conf files only if collectd_marker.conf exists 
+ if [ -f /etc/collectd_marker.conf ]; then
+     if [ -f /etc/collectd.conf ]; then
+-        cp /etc/opt/microsoft/omsagent/sysconf/omsagent.d/oms.conf /etc/collectd.d/oms.conf
++        cp /var/vcap/packages/omsagent/etc/sysconf/omsagent.d/oms.conf /etc/collectd.d/oms.conf
+     else
+-        cp /etc/opt/microsoft/omsagent/sysconf/omsagent.d/oms.conf /etc/collectd/collectd.conf.d/oms.conf
++        cp /var/vcap/packages/omsagent/etc/sysconf/omsagent.d/oms.conf /etc/collectd/collectd.conf.d/oms.conf
+     fi
+-    cp /etc/opt/microsoft/omsagent/sysconf/omsagent.d/collectd.conf ${{CONF_DIR}}/omsagent.d/collectd.conf
++    cp /var/vcap/packages/omsagent/etc/sysconf/omsagent.d/collectd.conf ${{CONF_DIR}}/omsagent.d/collectd.conf
+     rm /etc/collectd_marker.conf
+ fi
+ 
+@@ -184,7 +189,7 @@ chown -R omsagent:omsagent ${{CONF_DIR}}
+ 
+ %Postinstall_300
+ if [ -f /etc/omsagent-onboard.conf ]; then
+-   /opt/microsoft/omsagent/bin/omsadmin.sh
++   /var/vcap/packages/omsagent/opt/bin/omsadmin.sh
+ fi
+ 
+ %Postuninstall_10
+@@ -200,17 +205,17 @@ fi
+ # Thus, if we're an upgrade, skip all of this cleanup
+ if ${{PERFORMING_UPGRADE_NOT}}; then
+    # Clean up directory tree (created via PostInstall) if dirs are empty
+-   rmdir /etc/opt/microsoft/omsagent/certs/ 2> /dev/null
+-   rmdir /var/opt/microsoft/omsagent/tmp 2> /dev/null
+-   rmdir /var/opt/microsoft/omsagent/state 2> /dev/null
+-   rmdir /var/opt/microsoft/omsagent/run 2> /dev/null
+-   rmdir /var/opt/microsoft/omsagent/log 2> /dev/null
+-   rmdir /var/opt/microsoft/omsagent 2> /dev/null
++   rmdir /var/vcap/packages/omsagent/etc/certs/ 2> /dev/null
++   rmdir /var/vcap/packages/omsagent/var/tmp 2> /dev/null
++   rmdir /var/vcap/packages/omsagent/var/state 2> /dev/null
++   rmdir /var/vcap/sys/run/omsagent 2> /dev/null
++   rmdir /var/vcap/sys/log/omsagent 2> /dev/null
++   rmdir /var/vcap/packages/omsagent/var 2> /dev/null
+ 
+    # Clean up installinfo.txt file (registered as "conf" file to pass rpmcheck)
+-   rm -f /etc/opt/microsoft/omsagent/sysconf/installinfo.txt*
+-   rmdir /etc/opt/microsoft/omsagent/sysconf 2> /dev/null
+-   rmdir /etc/opt/microsoft/omsagent 2> /dev/null
++   rm -f /var/vcap/packages/omsagent/etc/sysconf/installinfo.txt*
++   rmdir /var/vcap/packages/omsagent/etc/sysconf 2> /dev/null
++   rmdir /var/vcap/packages/omsagent/etc 2> /dev/null
+    rmdir /etc/opt/microsoft 2> /dev/null
+    rmdir /etc/opt 2> /dev/null
+ fi
+diff --git a/installer/datafiles/linux.data b/installer/datafiles/linux.data
+index 7cfd5f1..5ecfd42 100644
+--- a/installer/datafiles/linux.data
++++ b/installer/datafiles/linux.data
+@@ -1,21 +1,21 @@
+ %Variables
+ PF:           'Linux'
+ RSYSLOG_DEST: '/etc/rsyslog.d/95-omsagent.conf'
+-OMI_SERVICE:  '/opt/omi/bin/service_control'
+-OMS_SERVICE:  '/opt/microsoft/omsagent/bin/service_control'
++OMI_SERVICE:  '/var/vcap/packages/omi/opt/bin/service_control'
++OMS_SERVICE:  '/var/vcap/packages/omsagent/opt/bin/service_control'
+ 
+ %Directories
+ /etc;                                                   755; root; root; sysdir
+ /etc/init.d;                                            755; root; root; sysdir
+ 
+ %Files
+-/etc/opt/microsoft/omsagent/sysconf/rsyslog.conf;                       installer/conf/rsyslog.conf;                           644; root; root
+-/etc/opt/microsoft/omsagent/sysconf/syslog-ng.conf;                     installer/conf/syslog-ng.conf;                         644; root; root
++/var/vcap/packages/omsagent/etc/sysconf/rsyslog.conf;                       installer/conf/rsyslog.conf;                           644; root; root
++/var/vcap/packages/omsagent/etc/sysconf/syslog-ng.conf;                     installer/conf/syslog-ng.conf;                         644; root; root
+ 
+-/etc/opt/microsoft/omsagent/sysconf/omsagent.ulinux;                    installer/scripts/omsagent.ulinux;                     755; root; root
+-/etc/opt/microsoft/omsagent/sysconf/omsagent.systemd;                   installer/scripts/omsagent.systemd;                    644; root; root
++/var/vcap/packages/omsagent/etc/sysconf/omsagent.ulinux;                    installer/scripts/omsagent.ulinux;                     755; root; root
++/var/vcap/packages/omsagent/etc/sysconf/omsagent.systemd;                   installer/scripts/omsagent.systemd;                    644; root; root
+ 
+-/etc/opt/microsoft/omsagent/sysconf/sudoers;                            installer/conf/sudoers;                                664; root; root
++/var/vcap/packages/omsagent/etc/sysconf/sudoers;                            installer/conf/sudoers;                                664; root; root
+ 
+ %Syslog_Services
+ RestartService() {
+@@ -49,7 +49,7 @@ ConfigureRsyslog() {
+     if [ ! -f ${{RSYSLOG_DEST}} ]; then
+         echo "Configuring rsyslog for OMS logging"
+ 
+-        cp /etc/opt/microsoft/omsagent/sysconf/rsyslog.conf ${{RSYSLOG_DEST}}
++        cp /var/vcap/packages/omsagent/etc/sysconf/rsyslog.conf ${{RSYSLOG_DEST}}
+         chown omsagent:omsagent ${{RSYSLOG_DEST}}
+         RestartService rsyslog
+     fi
+@@ -70,7 +70,7 @@ ConfigureOldRsyslog() {
+     if [ $? -ne 0 ]; then
+         echo "Configuring (old) rsyslog for OMS logging"
+ 
+-        cat /etc/opt/microsoft/omsagent/sysconf/rsyslog.conf >> /etc/rsyslog.conf
++        cat /var/vcap/packages/omsagent/etc/sysconf/rsyslog.conf >> /etc/rsyslog.conf
+         RestartService rsyslog
+     fi
+ }
+@@ -92,7 +92,7 @@ ConfigureSyslog_ng() {
+     if [ $? -ne 0 ]; then
+         echo "Configuring syslog-ng for OMS logging"
+ 
+-        cat /etc/opt/microsoft/omsagent/sysconf/syslog-ng.conf >> /etc/syslog-ng/syslog-ng.conf
++        cat /var/vcap/packages/omsagent/etc/sysconf/syslog-ng.conf >> /etc/syslog-ng/syslog-ng.conf
+         RestartService syslog
+     fi
+ }
+@@ -172,14 +172,14 @@ SudoSupportsIncludeDirective() {
+ #include Syslog_Services
+ 
+ # If our service is already running, stop it
+-if [ -f ${{OMS_SERVICE}} ]; then
+-   ${{OMS_SERVICE}} stop
+-fi
++# if [ -f ${{OMS_SERVICE}} ]; then
++#   ${{OMS_SERVICE}} stop
++# fi
+ 
+ UnconfigureSyslog
+ 
+ # The OMS_SERVICE script will not be present on a fresh install
+-[ -f ${{OMS_SERVICE}} ] && ${{OMS_SERVICE}} disable
++# [ -f ${{OMS_SERVICE}} ] && ${{OMS_SERVICE}} disable
+ 
+ # Add the 'omsagent' group if it does not already exist
+ # (Can't use useradd with -U since that doesn't exist on older systems)
+@@ -193,7 +193,7 @@ fi
+ egrep -q "^omsagent:" /etc/passwd
+ if [ $? -ne 0 ]; then
+     echo "Creating omsagent service account ..."
+-    useradd -r -c "OMS agent" -d /var/opt/microsoft/omsagent/run -g omsagent -s /bin/bash omsagent
++    useradd -r -c "OMS agent" -d /var/vcap/packages/omsagent/var/run -g omsagent -s /bin/bash omsagent
+ fi
+ 
+ # Ensure omsagent is in the omiusers group, but leave omsagent as a group
+@@ -204,7 +204,7 @@ fi
+ #include Sudoer_Functions
+ 
+ ${{OMI_SERVICE}} reload
+-${{OMS_SERVICE}} enable
++# ${{OMS_SERVICE}} enable
+ 
+ ConfigureSyslog
+ 
+@@ -216,13 +216,13 @@ RemoveSudoersSupport
+ 
+ SudoSupportsIncludeDirective
+ if [ $? -eq 0 ]; then
+-    cp /etc/opt/microsoft/omsagent/sysconf/sudoers /etc/sudoers.d/omsagent
++    cp /var/vcap/packages/omsagent/etc/sysconf/sudoers /etc/sudoers.d/omsagent
+     chmod 440 /etc/sudoers.d/omsagent
+ else
+-    cat /etc/opt/microsoft/omsagent/sysconf/sudoers >> /etc/sudoers
++    cat /var/vcap/packages/omsagent/etc/sysconf/sudoers >> /etc/sudoers
+ fi
+ 
+-chmod 440 /etc/opt/microsoft/omsagent/sysconf/sudoers
++chmod 440 /var/vcap/packages/omsagent/etc/sysconf/sudoers
+ 
+ 
+ %Preuninstall_10
+@@ -230,7 +230,7 @@ chmod 440 /etc/opt/microsoft/omsagent/sysconf/sudoers
+ # If we're called for upgrade, don't do anything
+ if ${{PERFORMING_UPGRADE_NOT}}; then
+     UnconfigureSyslog
+-    ${{OMS_SERVICE}} disable
++#    ${{OMS_SERVICE}} disable
+ fi
+ 
+ 
+@@ -240,7 +240,7 @@ fi
+ # If we're called for upgrade, don't do anything
+ if ${{PERFORMING_UPGRADE_NOT}}; then
+     # Restart the OMI server in case an agent is running under service account
+-    ${{OMI_SERVICE}} restart
++#    ${{OMI_SERVICE}} restart
+ 
+     # Unconfigure sudo if it's already configured
+     RemoveSudoersSupport
+diff --git a/installer/datafiles/linux_dpkg.data b/installer/datafiles/linux_dpkg.data
+index f78772c..3661775 100644
+--- a/installer/datafiles/linux_dpkg.data
++++ b/installer/datafiles/linux_dpkg.data
+@@ -6,5 +6,5 @@ PACKAGE_TYPE: 'DPKG'
+ %% In omsadmin.sh: 'curl' requires 'curl'
+ curl
+ 
+-omi (>= 1.0.8.6)
+-scx (>= 1.6.2.129)
++omi-bosh (>= 1.0.8.6)
++scx-bosh (>= 1.6.2.129)
+diff --git a/installer/datafiles/linux_rpm.data b/installer/datafiles/linux_rpm.data
+index 6478500..3396770 100644
+--- a/installer/datafiles/linux_rpm.data
++++ b/installer/datafiles/linux_rpm.data
+@@ -6,5 +6,5 @@ PACKAGE_TYPE: 'RPM'
+ %% In omsadmin.sh: 'curl' requires 'curl',
+ curl
+ 
+-omi >= 1.0.8-6
+-scx >= 1.6.2-129
++omi-bosh >= 1.0.8-6
++scx-bosh >= 1.6.2-129
+diff --git a/installer/datafiles/ruby.data b/installer/datafiles/ruby.data
+index 7e72c40..f663b0c 100644
+--- a/installer/datafiles/ruby.data
++++ b/installer/datafiles/ruby.data
+@@ -1,5 +1,5 @@
+ %Variables
+-RUBY_DEST:                '/opt/microsoft/omsagent/ruby'
++RUBY_DEST:                '/var/vcap/packages/omsagent/opt/ruby'
+ 
+ %Files
+ 
+diff --git a/installer/scripts/genRubyInstaller.sh b/installer/scripts/genRubyInstaller.sh
+index 16b8974..42604b2 100755
+--- a/installer/scripts/genRubyInstaller.sh
++++ b/installer/scripts/genRubyInstaller.sh
+@@ -90,7 +90,7 @@ done
+ echo "Writing results to file: $OUTPUT_RESULTS"
+ 
+ echo "%Variables" > $OUTPUT_RESULTS
+-printf "%-25s %s\n" RUBY_DEST: "'/opt/microsoft/omsagent/ruby'" >> $OUTPUT_RESULTS
++printf "%-25s %s\n" RUBY_DEST: "'/var/vcap/packages/omsagent/opt/ruby'" >> $OUTPUT_RESULTS
+ echo "" >> $OUTPUT_RESULTS
+ 
+ cat $OUTPUT_FILE >> $OUTPUT_RESULTS
+diff --git a/installer/scripts/omsadmin.sh b/installer/scripts/omsadmin.sh
+index 385f3af..b266472 100755
+--- a/installer/scripts/omsadmin.sh
++++ b/installer/scripts/omsadmin.sh
+@@ -2,10 +2,10 @@
+ 
+ set -e
+ 
+-TMP_DIR=/var/opt/microsoft/omsagent/tmp
+-CERT_DIR=/etc/opt/microsoft/omsagent/certs
+-CONF_DIR=/etc/opt/microsoft/omsagent/conf
+-SYSCONF_DIR=/etc/opt/microsoft/omsagent/sysconf
++TMP_DIR=/var/vcap/packages/omsagent/var/tmp
++CERT_DIR=/var/vcap/packages/omsagent/etc/certs
++CONF_DIR=/var/vcap/packages/omsagent/etc/conf
++SYSCONF_DIR=/var/vcap/packages/omsagent/etc/sysconf
+ COLLECTD_DIR=/etc/collectd/collectd.conf.d
+ 
+ # Optional file with initial onboarding credentials
+@@ -21,17 +21,17 @@ CONF_OMSAGENT=$CONF_DIR/omsagent.conf
+ CONF_PROXY=$CONF_DIR/proxy.conf
+ 
+ # File with OS information for telemetry
+-OS_INFO=/etc/opt/microsoft/scx/conf/scx-release
++OS_INFO=/var/vcap/packages/scx/etc/conf/scx-release
+ 
+ # File with information about the agent installed
+-INSTALL_INFO=/etc/opt/microsoft/omsagent/sysconf/installinfo.txt
++INSTALL_INFO=/var/vcap/packages/omsagent/etc/sysconf/installinfo.txt
+ 
+ # Ruby helpers
+-RUBY=/opt/microsoft/omsagent/ruby/bin/ruby
+-AUTH_KEY_SCRIPT=/opt/microsoft/omsagent/bin/auth_key.rb
+-TOPOLOGY_REQ_SCRIPT=/opt/microsoft/omsagent/plugin/agent_topology_request_script.rb
++RUBY=/var/vcap/packages/omsagent/opt/ruby/bin/ruby
++AUTH_KEY_SCRIPT=/var/vcap/packages/omsagent/opt/bin/auth_key.rb
++TOPOLOGY_REQ_SCRIPT=/var/vcap/packages/omsagent/opt/plugin/agent_topology_request_script.rb
+ 
+-METACONFIG_PY=/opt/microsoft/omsconfig/Scripts/OMS_MetaConfigHelper.py
++METACONFIG_PY=/var/vcap/packages/omsconfig/opt/Scripts/OMS_MetaConfigHelper.py
+ 
+ # Certs
+ FILE_KEY=$CERT_DIR/oms.key
+@@ -425,9 +425,9 @@ onboard()
+     save_config
+ 
+     # If a test is not in progress then register omsagent as a service and start the agent 
+-    if [ -z "$TEST_WORKSPACE_ID" -a -z "$TEST_SHARED_KEY" ]; then
+-        /opt/microsoft/omsagent/bin/service_control start 
+-    fi
++    # if [ -z "$TEST_WORKSPACE_ID" -a -z "$TEST_SHARED_KEY" ]; then
++    #    /var/vcap/packages/omsagent/opt/bin/service_control start 
++    # fi
+ 
+     if [ -e $METACONFIG_PY ]; then
+         if [ "$USER_ID" -eq "0" ]; then
+@@ -585,7 +585,7 @@ collectd()
+         cp $SYSCONF_DIR/omsagent.d/oms.conf $COLLECTD_DIR/oms.conf
+         cp $SYSCONF_DIR/omsagent.d/collectd.conf $CONF_DIR/omsagent.d/collectd.conf
+         chown omsagent:omsagent $CONF_DIR/omsagent.d/collectd.conf
+-        /opt/microsoft/omsagent/bin/service_control restart 
++        /var/vcap/packages/omsagent/opt/bin/service_control restart 
+     else
+         echo "$COLLECTD_DIR - directory does not exist. Please make sure collectd is installed properly"
+         return 1
+diff --git a/installer/scripts/omsagent.systemd b/installer/scripts/omsagent.systemd
+index 5db61c7..a2df5d1 100644
+--- a/installer/scripts/omsagent.systemd
++++ b/installer/scripts/omsagent.systemd
+@@ -7,12 +7,12 @@ Wants=omid.service
+ Type=simple
+ User=omsagent
+ Group=omiusers
+-PIDFile=/var/opt/microsoft/omsagent/run/omsagent.pid
+-ExecStart=/opt/microsoft/omsagent/bin/omsagent \
+-  -d /var/opt/microsoft/omsagent/run/omsagent.pid \
+-  -o /var/opt/microsoft/omsagent/log/omsagent.log \
++PIDFile=/var/vcap/sys/run/omsagent/omsagent.pid
++ExecStart=/var/vcap/packages/omsagent/opt/bin/omsagent \
++  -d /var/vcap/sys/run/omsagent/omsagent.pid \
++  -o /var/vcap/sys/log/omsagent/omsagent.log \
+   --no-supervisor
+-ExecStop=/bin/rm -f /var/opt/microsoft/omsagent/run/omsagent.pid
++ExecStop=/bin/rm -f /var/vcap/sys/run/omsagent/omsagent.pid
+ KillMode=process
+ KillSignal=SIGKILL
+ TimeoutStartSec=10
+diff --git a/installer/scripts/omsagent.ulinux b/installer/scripts/omsagent.ulinux
+index 072e952..d563ebc 100755
+--- a/installer/scripts/omsagent.ulinux
++++ b/installer/scripts/omsagent.ulinux
+@@ -16,7 +16,7 @@
+ # Description:       Operations Management Suite (omsagent) Server
+ ### END INIT INFO
+ 
+-OMS_HOME=/opt/microsoft/omsagent
++OMS_HOME=/var/vcap/packages/omsagent/opt
+ OMS_NAME="Operations Management Suite agent"
+ 
+ OMS_BIN=$OMS_HOME/bin/omsagent
+@@ -26,12 +26,12 @@ test -x $OMS_BIN || { echo "$OMS_BIN not installed";
+ 
+ # LOGFILE and PIDFILE picked up from service control helper script
+ 
+-if [ ! -f /opt/microsoft/omsagent/bin/service_control ]; then
++if [ ! -f /var/vcap/packages/omsagent/opt/bin/service_control ]; then
+     echo "Could not source service control functions."
+     exit 1
+ fi
+ 
+-. /opt/microsoft/omsagent/bin/service_control functions
++. /var/vcap/packages/omsagent/opt/bin/service_control functions
+ 
+ if [ -f /etc/init.d/functions ]; then
+     INIT_STYLE=R      # INIT_STYLE uses R/S/D for its representative platform RedHat/SuSE/Debian 
+diff --git a/installer/scripts/service_control b/installer/scripts/service_control
+index b1b38d3..9bec22e 100644
+--- a/installer/scripts/service_control
++++ b/installer/scripts/service_control
+@@ -16,9 +16,9 @@
+ #    reload:   Reload agent configuration
+ #
+ 
+-LOGFILE=/var/opt/microsoft/omsagent/log/omsagent.log
+-PIDFILE=/var/opt/microsoft/omsagent/run/omsagent.pid
+-OMSADMIN_CONF=/etc/opt/microsoft/omsagent/conf/omsadmin.conf
++LOGFILE=/var/vcap/sys/log/omsagent/omsagent.log
++PIDFILE=/var/vcap/sys/run/omsagent/omsagent.pid
++OMSADMIN_CONF=/var/vcap/packages/omsagent/etc/conf/omsadmin.conf
+ 
+ verify_privileges()
+ {
+@@ -93,7 +93,7 @@ stop_omsagent_process()
+ 
+ start_omsagent_process()
+ {
+-    is_omsagent_running && /opt/microsoft/omsagent/bin/omsagent -d $PIDFILE --no-supervisor -o $LOGFILE
++    is_omsagent_running && /var/vcap/packages/omsagent/opt/bin/omsagent -d $PIDFILE --no-supervisor -o $LOGFILE
+ }
+ 
+ #
+@@ -207,16 +207,16 @@ find_systemd_dir()
+ enable_omsagent_service()
+ {
+     exit_if_agent_not_onboarded
+-    if [ ! -f /etc/opt/microsoft/omsagent/conf/.service_registered ] && [ -f $OMSADMIN_CONF ]; then
++    if [ ! -f /var/vcap/packages/omsagent/etc/conf/.service_registered ] && [ -f $OMSADMIN_CONF ]; then
+         echo "Configuring OMS agent service ..."
+         if pidof systemd 1> /dev/null 2> /dev/null; then
+             # systemd
+             local systemd_dir=$(find_systemd_dir)
+-            cp /etc/opt/microsoft/omsagent/sysconf/omsagent.systemd ${systemd_dir}/omsagent.service
++            cp /var/vcap/packages/omsagent/etc/sysconf/omsagent.systemd ${systemd_dir}/omsagent.service
+             /bin/systemctl daemon-reload
+             /bin/systemctl -q enable omsagent
+         else
+-            cp /etc/opt/microsoft/omsagent/sysconf/omsagent.ulinux /etc/init.d/omsagent
++            cp /var/vcap/packages/omsagent/etc/sysconf/omsagent.ulinux /etc/init.d/omsagent
+ 
+             if [ -x /usr/sbin/update-rc.d ]; then
+                 update-rc.d omsagent defaults > /dev/null
+@@ -229,7 +229,7 @@ enable_omsagent_service()
+                 exit 1
+             fi
+         fi
+-        touch  /etc/opt/microsoft/omsagent/conf/.service_registered
++        touch  /var/vcap/packages/omsagent/etc/conf/.service_registered
+     fi 
+ }
+ 
+@@ -261,7 +261,7 @@ disable_omsagent_service()
+ 
+         rm /etc/init.d/omsagent
+     fi
+-    rm -f /etc/opt/microsoft/omsagent/conf/.service_registered
++    rm -f /var/vcap/packages/omsagent/etc/conf/.service_registered
+ }
+ 
+ case "$1" in
+diff --git a/installer/scripts/uninstall.sh b/installer/scripts/uninstall.sh
+index 4d16f18..45161cc 100755
+--- a/installer/scripts/uninstall.sh
++++ b/installer/scripts/uninstall.sh
+@@ -64,8 +64,8 @@ pkg_rm omsagent
+ # If MDSD is installed and we're just removing (not purging), leave SCX
+ 
+ if [ ! -d /var/lib/waagent/Microsoft.OSTCExtensions.LinuxDiagnostic-*/mdsd -o "$installMode" = "P" ]; then
+-    if [ -f /opt/microsoft/scx/bin/uninstall ]; then
+-	/opt/microsoft/scx/bin/uninstall $installMode
++    if [ -f /var/vcap/packages/scx/opt/bin/uninstall ]; then
++	/var/vcap/packages/scx/opt/bin/uninstall $installMode
+     else
+ 	for i in /opt/microsoft/*-cimprov; do
+ 	    PKG_NAME=`basename $i`
+@@ -92,23 +92,23 @@ if [ "$installMode" = "P" ]; then
+ 
+     check_if_pkg_is_installed omsconfig
+     if [ $? -ne 0 ]; then
+-	rm -rf /etc/opt/microsoft/omsconfig /opt/microsoft/omsconfig /var/opt/microsoft/omsconfig
++	rm -rf /var/vcap/packages/omsconfig/etc /var/vcap/packages/omsconfig/opt /var/vcap/packages/omsconfig/var
+     fi
+ 
+     check_if_pkg_is_installed omsagent
+     if [ $? -ne 0 ]; then
+-	rm -rf /etc/opt/microsoft/omsagent /opt/microsoft/omsagent /var/opt/microsoft/omsagent
++	rm -rf /var/vcap/packages/omsagent/etc /var/vcap/packages/omsagent/opt /var/vcap/packages/omsagent/var
+     fi
+ 
+     check_if_pkg_is_installed scx
+     if [ $? -ne 0 ]; then
+-	rm -rf /etc/opt/microsoft/scx /opt/microsoft/scx /var/opt/microsoft/scx \
++	rm -rf /var/vcap/packages/scx/etc /var/vcap/packages/scx/opt /var/vcap/packages/scx/var \
+ 	    /etc/opt/microsoft/*-cimprov /opt/microsoft/*-cimprov /var/opt/microsoft/*-cimprov
+     fi
+ 
+     check_if_pkg_is_installed omi
+     if [ $? -ne 0 ]; then
+-	rm -rf /etc/opt/omi /opt/omi /var/opt/omi
++	rm -rf /var/vcap/packages/omi/etc /var/vcap/packages/omi/opt /var/vcap/packages/omi/var
+     fi
+ 
+     rmdir /etc/opt/microsoft /opt/microsoft /var/opt/microsoft > /dev/null 2> /dev/null || true
+diff --git a/source/code/plugins/agent_topology_request_script.rb b/source/code/plugins/agent_topology_request_script.rb
+index 5ba861e..558332a 100644
+--- a/source/code/plugins/agent_topology_request_script.rb
++++ b/source/code/plugins/agent_topology_request_script.rb
+@@ -66,7 +66,7 @@ class AgentTopologyRequest < StrongTypedClass
+ 
+     # Get process stats from omsagent for telemetry
+     if ENV['TEST_WORKSPACE_ID'].nil? && ENV['TEST_SHARED_KEY'].nil? && File.exist?(conf_omsadmin)
+-      process_stats = `/opt/omi/bin/omicli wql root/scx \"SELECT PercentUserTime, PercentPrivilegedTime, UsedMemory, PercentUsedMemory FROM SCX_UnixProcessStatisticalInformation where Name like 'omsagent'\" | grep =`
++      process_stats = `/var/vcap/packages/omi/opt/bin/omicli wql root/scx \"SELECT PercentUserTime, PercentPrivilegedTime, UsedMemory, PercentUsedMemory FROM SCX_UnixProcessStatisticalInformation where Name like 'omsagent'\" | grep =`
+       process_stats.each_line do |line|
+         telemetry.PercentUserTime = line.sub("PercentUserTime=","").strip.to_i if line =~ /PercentUserTime/
+         telemetry.PercentPrivilegedTime = line.sub("PercentPrivilegedTime=", "").strip.to_i if  line =~ /PercentPrivilegedTime/
+diff --git a/source/code/plugins/filter_omi.rb b/source/code/plugins/filter_omi.rb
+index ce7cf4b..a4f7737 100644
+--- a/source/code/plugins/filter_omi.rb
++++ b/source/code/plugins/filter_omi.rb
+@@ -19,7 +19,7 @@ module Fluent
+     
+     def start
+       super
+-      @omi_lib = OmiModule::Omi.new(OmiModule::RuntimeError.new, "/etc/opt/microsoft/omsagent/sysconf/omi_mapping.json")
++      @omi_lib = OmiModule::Omi.new(OmiModule::RuntimeError.new, "/var/vcap/packages/omsagent/etc/sysconf/omi_mapping.json")
+     end
+     
+     # each record represents one line from the nagios log
+diff --git a/source/code/plugins/heartbeat_lib.rb b/source/code/plugins/heartbeat_lib.rb
+index fa4d84c..20ff835 100644
+--- a/source/code/plugins/heartbeat_lib.rb
++++ b/source/code/plugins/heartbeat_lib.rb
+@@ -47,7 +47,7 @@ module HeartbeatModule
+       return record
+     end
+ 
+-    def enumerate(time, os_conf_file_path = "/etc/opt/microsoft/scx/conf/scx-release", agent_install_conf_file_path = "/etc/opt/microsoft/omsagent/sysconf/installinfo.txt")
++    def enumerate(time, os_conf_file_path = "/var/vcap/packages/scx/etc/conf/scx-release", agent_install_conf_file_path = "/var/vcap/packages/omsagent/etc/sysconf/installinfo.txt")
+       data_item = get_heartbeat_data_item(time, os_conf_file_path, agent_install_conf_file_path)
+       wrapper = {
+          "DataType"=>"HEALTH_ASSESSMENT_BLOB",
+diff --git a/source/code/plugins/in_dsc_monitor.rb b/source/code/plugins/in_dsc_monitor.rb
+index 32280b4..f834a0e 100644
+--- a/source/code/plugins/in_dsc_monitor.rb
++++ b/source/code/plugins/in_dsc_monitor.rb
+@@ -9,7 +9,7 @@ module Fluent
+     config_param :tag, :string, :default=>nil
+     config_param :check_install_interval, :time, :default=>86400
+     config_param :check_status_interval, :time, :default=>1800
+-    config_param :dsc_cache_file, :string, :default=>'/var/opt/microsoft/omsagent/state/dsc_cache.yml'
++    config_param :dsc_cache_file, :string, :default=>'/var/vcap/packages/omsagent/var/state/dsc_cache.yml'
+    
+     def configure(conf)
+       super
+@@ -30,9 +30,9 @@ module Fluent
+     def check_install
+       dpkg = (%x(which dpkg > /dev/null 2>&1; echo $?)).to_i
+       if dpkg == 0
+-        %x(dpkg --list omsconfig > /dev/null 2>&1; echo $?).to_i
++        %x(dpkg --list omsconfig-bosh > /dev/null 2>&1; echo $?).to_i
+       else
+-        %x(rpm -qi omsconfig > /dev/null 2>&1; echo $?).to_i
++        %x(rpm -qi omsconfig-bosh > /dev/null 2>&1; echo $?).to_i
+       end
+     end
+ 
+@@ -41,7 +41,7 @@ module Fluent
+         @install_status = check_install
+ 
+         if @install_status == 1
+-           router.emit(@tag, Time.now.to_f, {"message"=>"omconfig is not installed, OMS Portal \
++           router.emit(@tag, Time.now.to_f, {"message"=>"omsconfig is not installed, OMS Portal \
+ configuration will not be applied and solutions such as Change Tracking and Update Assessment will \
+ not function properly. omsconfig can be installed by rerunning the omsagent installation"})
+         end
+@@ -51,7 +51,7 @@ not function properly. omsconfig can be installed by rerunning the omsagent inst
+ 
+     def get_dsc_status
+       begin
+-        dsc_status = %x(/opt/microsoft/omsconfig/Scripts/TestDscConfiguration.py)
++        dsc_status = %x(/var/vcap/packages/omsconfig/opt/Scripts/TestDscConfiguration.py)
+       rescue => error
+         OMS::Log.error_once("Unable to run TestDscConfiguration.py for dsc : #{error}")
+       end
+diff --git a/source/code/plugins/in_oms_omi.rb b/source/code/plugins/in_oms_omi.rb
+index 4f2b2c5..c7b4c18 100644
+--- a/source/code/plugins/in_oms_omi.rb
++++ b/source/code/plugins/in_oms_omi.rb
+@@ -15,7 +15,7 @@ module Fluent
+     config_param :counter_name_regex, :string, :default => ".*"
+     config_param :interval, :time, :default => nil
+     config_param :tag, :string, :default => "oms.omi"  
+-    config_param :omi_mapping_path, :string, :default => "/etc/opt/microsoft/omsagent/conf/omsagent.d/omi_mapping.json"
++    config_param :omi_mapping_path, :string, :default => "/var/vcap/packages/omsagent/etc/conf/omsagent.d/omi_mapping.json"
+ 
+     def configure (conf)
+       super
+diff --git a/source/code/plugins/in_zabbix.rb b/source/code/plugins/in_zabbix.rb
+index 57ec42e..de5125a 100644
+--- a/source/code/plugins/in_zabbix.rb
++++ b/source/code/plugins/in_zabbix.rb
+@@ -9,10 +9,10 @@ module Fluent
+ 			super
+ 			require 'json'
+ 			require 'date'
+-			require '/opt/microsoft/omsagent/plugin/zabbixapi' 
++			require '/var/vcap/packages/omsagent/opt/plugin/zabbixapi' 
+ 			require_relative 'zabbix_lib'
+ 			
+-			@watermark_file = '/var/opt/microsoft/omsagent/state/zabbix_watermark'
++			@watermark_file = '/var/vcap/packages/omsagent/var/state/zabbix_watermark'
+ 			@default_watermark = Time.now.to_i
+ 		end
+ 
+diff --git a/source/code/plugins/oms_common.rb b/source/code/plugins/oms_common.rb
+index 91df4dd..e546e3f 100644
+--- a/source/code/plugins/oms_common.rb
++++ b/source/code/plugins/oms_common.rb
+@@ -535,7 +535,7 @@ module OMS
+         return @@CurrentTimeZone
+       end # end get_current_timezone
+ 
+-      def get_os_full_name(conf_path = "/etc/opt/microsoft/scx/conf/scx-release")
++      def get_os_full_name(conf_path = "/var/vcap/packages/scx/etc/conf/scx-release")
+         return @@OSFullName if !@@OSFullName.nil?
+ 
+         if File.file?(conf_path)
+@@ -548,7 +548,7 @@ module OMS
+         return @@OSFullName
+       end
+ 
+-      def get_os_name(conf_path = "/etc/opt/microsoft/scx/conf/scx-release")
++      def get_os_name(conf_path = "/var/vcap/packages/scx/etc/conf/scx-release")
+         return @@OSName if !@@OSName.nil?
+ 
+         if File.file?(conf_path)
+@@ -561,7 +561,7 @@ module OMS
+         return @@OSName
+       end
+ 
+-      def get_os_version(conf_path = "/etc/opt/microsoft/scx/conf/scx-release")
++      def get_os_version(conf_path = "/var/vcap/packages/scx/etc/conf/scx-release")
+         return @@OSVersion if !@@OSVersion.nil?
+ 
+         if File.file?(conf_path)
+@@ -600,7 +600,7 @@ module OMS
+         return @@FQDN
+       end
+ 
+-      def get_installed_date(conf_path = "/etc/opt/microsoft/omsagent/sysconf/installinfo.txt")
++      def get_installed_date(conf_path = "/var/vcap/packages/omsagent/etc/sysconf/installinfo.txt")
+         return @@InstalledDate if !@@InstalledDate.nil?
+ 
+         if File.file?(conf_path)
+@@ -619,7 +619,7 @@ module OMS
+         return @@InstalledDate
+       end
+ 
+-      def get_agent_version(conf_path = "/etc/opt/microsoft/omsagent/sysconf/installinfo.txt")
++      def get_agent_version(conf_path = "/var/vcap/packages/omsagent/etc/sysconf/installinfo.txt")
+         return @@AgentVersion if !@@AgentVersion.nil?
+ 
+         if File.file?(conf_path)
+diff --git a/source/code/plugins/out_oms.rb b/source/code/plugins/out_oms.rb
+index 5741b11..6fdb567 100644
+--- a/source/code/plugins/out_oms.rb
++++ b/source/code/plugins/out_oms.rb
+@@ -18,10 +18,10 @@ module Fluent
+       require_relative 'oms_common'
+     end
+ 
+-    config_param :omsadmin_conf_path, :string, :default => '/etc/opt/microsoft/omsagent/conf/omsadmin.conf'
+-    config_param :cert_path, :string, :default => '/etc/opt/microsoft/omsagent/certs/oms.crt'
+-    config_param :key_path, :string, :default => '/etc/opt/microsoft/omsagent/certs/oms.key'
+-    config_param :proxy_conf_path, :string, :default => '/etc/opt/microsoft/omsagent/conf/proxy.conf'
++    config_param :omsadmin_conf_path, :string, :default => '/var/vcap/packages/omsagent/etc/conf/omsadmin.conf'
++    config_param :cert_path, :string, :default => '/var/vcap/packages/omsagent/etc/certs/oms.crt'
++    config_param :key_path, :string, :default => '/var/vcap/packages/omsagent/etc/certs/oms.key'
++    config_param :proxy_conf_path, :string, :default => '/var/vcap/packages/omsagent/etc/conf/proxy.conf'
+     config_param :compress, :bool, :default => true
+ 
+     def configure(conf)
+diff --git a/source/code/plugins/out_oms_api.rb b/source/code/plugins/out_oms_api.rb
+index fcf324c..8a8c198 100644
+--- a/source/code/plugins/out_oms_api.rb
++++ b/source/code/plugins/out_oms_api.rb
+@@ -23,10 +23,10 @@ module Fluent
+       require_relative 'oms_common'
+     end
+ 
+-    config_param :omsadmin_conf_path, :string, :default => '/etc/opt/microsoft/omsagent/conf/omsadmin.conf'
+-    config_param :cert_path, :string, :default => '/etc/opt/microsoft/omsagent/certs/oms.crt'
+-    config_param :key_path, :string, :default => '/etc/opt/microsoft/omsagent/certs/oms.key'
+-    config_param :proxy_conf_path, :string, :default => '/etc/opt/microsoft/omsagent/conf/proxy.conf'
++    config_param :omsadmin_conf_path, :string, :default => '/var/vcap/packages/omsagent/etc/conf/omsadmin.conf'
++    config_param :cert_path, :string, :default => '/var/vcap/packages/omsagent/etc/certs/oms.crt'
++    config_param :key_path, :string, :default => '/var/vcap/packages/omsagent/etc/certs/oms.key'
++    config_param :proxy_conf_path, :string, :default => '/var/vcap/packages/omsagent/etc/conf/proxy.conf'
+     config_param :api_version, :string, :default => '2016-04-01'
+     config_param :compress, :bool, :default => true
+     config_param :time_generated_field, :string, :default => ''
+diff --git a/source/code/plugins/out_oms_blob.rb b/source/code/plugins/out_oms_blob.rb
+index 94a4e22..e9c52f3 100644
+--- a/source/code/plugins/out_oms_blob.rb
++++ b/source/code/plugins/out_oms_blob.rb
+@@ -24,12 +24,12 @@ module Fluent
+       require_relative 'oms_common'
+     end
+ 
+-    config_param :omsadmin_conf_path, :string, :default => '/etc/opt/microsoft/omsagent/conf/omsadmin.conf'
+-    config_param :cert_path, :string, :default => '/etc/opt/microsoft/omsagent/certs/oms.crt'
+-    config_param :key_path, :string, :default => '/etc/opt/microsoft/omsagent/certs/oms.key'
++    config_param :omsadmin_conf_path, :string, :default => '/var/vcap/packages/omsagent/etc/conf/omsadmin.conf'
++    config_param :cert_path, :string, :default => '/var/vcap/packages/omsagent/etc/certs/oms.crt'
++    config_param :key_path, :string, :default => '/var/vcap/packages/omsagent/etc/certs/oms.key'
+     config_param :blob_uri_expiry, :string, :default => '00:10:00'
+     config_param :url_suffix_template, :string, :default => "custom_data_type + '/00000000-0000-0000-0000-000000000002/' + OMS::Common.get_hostname + '/' + OMS::Configuration.agent_id + '/' + suffix + '.log'"
+-    config_param :proxy_conf_path, :string, :default => '/etc/opt/microsoft/omsagent/conf/proxy.conf'
++    config_param :proxy_conf_path, :string, :default => '/var/vcap/packages/omsagent/etc/conf/proxy.conf'
+ 
+     def configure(conf)
+       super
+diff --git a/source/code/plugins/out_oms_statsd_aggregator.rb b/source/code/plugins/out_oms_statsd_aggregator.rb
+index 89cf3e9..cc2800f 100644
+--- a/source/code/plugins/out_oms_statsd_aggregator.rb
++++ b/source/code/plugins/out_oms_statsd_aggregator.rb
+@@ -14,7 +14,7 @@ module Fluent
+ 
+     config_param :flush_interval, :time, :default => 10
+     config_param :threshold_percentile, :integer, :default => 90
+-    config_param :persist_file, :string, :default => '/var/opt/microsoft/omsagent/state/statsd.data'
++    config_param :persist_file, :string, :default => '/var/vcap/packages/omsagent/var/state/statsd.data'
+     config_param :out_tag, :string
+ 
+     def configure(conf)
+diff --git a/source/code/plugins/patch_management_lib.rb b/source/code/plugins/patch_management_lib.rb
+index 01c4b4e..20d3f91 100644
+--- a/source/code/plugins/patch_management_lib.rb
++++ b/source/code/plugins/patch_management_lib.rb
+@@ -12,8 +12,8 @@ class LinuxUpdates
+     @@delimiter = "_"
+     @@force_send_last_upload = Time.now
+     MAJOR_MINOR_VERSION_REGEX = /([^\.]+)\.([^\.]+).*/
+-    OMS_ADMIN_FILE = "/etc/opt/microsoft/omsagent/conf/omsadmin.conf"
+-    SCX_RELEASE_FILE = "/etc/opt/microsoft/scx/conf/scx-release"
++    OMS_ADMIN_FILE = "/var/vcap/packages/omsagent/etc/conf/omsadmin.conf"
++    SCX_RELEASE_FILE = "/var/vcap/packages/scx/etc/conf/scx-release"
+ 
+     def self.getAgentDetails()
+         ret = {}
+diff --git a/source/ext/fluentd b/source/ext/fluentd
+--- a/source/ext/fluentd
++++ b/source/ext/fluentd
+@@ -1 +1 @@
+-Subproject commit 5e491f8f9dd93a8ed359f10d612272e7fb835ca2
++Subproject commit 5e491f8f9dd93a8ed359f10d612272e7fb835ca2-dirty
+diff --git a/source/ext/patches/fluentd/env.rb b/source/ext/patches/fluentd/env.rb
+index 92c191d..01e670d 100644
+--- a/source/ext/patches/fluentd/env.rb
++++ b/source/ext/patches/fluentd/env.rb
+@@ -15,9 +15,9 @@
+ #
+ 
+ module Fluent
+-  DEFAULT_CONFIG_PATH = ENV['FLUENT_CONF'] || '/etc/opt/microsoft/omsagent/conf/omsagent.conf'
+-  DEFAULT_PLUGIN_DIR = ENV['FLUENT_PLUGIN'] || '/opt/microsoft/omsagent/plugin'
+-  DEFAULT_SOCKET_PATH = ENV['FLUENT_SOCKET'] || '/var/opt/microsoft/omsagent/run/omsagent.sock'
++  DEFAULT_CONFIG_PATH = ENV['FLUENT_CONF'] || '/var/vcap/packages/omsagent/etc/conf/omsagent.conf'
++  DEFAULT_PLUGIN_DIR = ENV['FLUENT_PLUGIN'] || '/var/vcap/packages/omsagent/opt/plugin'
++  DEFAULT_SOCKET_PATH = ENV['FLUENT_SOCKET'] || '/var/vcap/sys/run/omsagent/omsagent.sock'
+   DEFAULT_LISTEN_PORT = 25224
+   DEFAULT_FILE_PERMISSION = 0644
+   DEFAULT_DIR_PERMISSION = 0755
+diff --git a/test/code/plugins/agent_topology_request_script_plugintest.rb b/test/code/plugins/agent_topology_request_script_plugintest.rb
+index 20fd897..765ab8b 100644
+--- a/test/code/plugins/agent_topology_request_script_plugintest.rb
++++ b/test/code/plugins/agent_topology_request_script_plugintest.rb
+@@ -36,7 +36,7 @@ class AgentTopologyRquestTest < Test::Unit::TestCase
+   TMP_DIR = File.dirname(__FILE__) + "/../tmp/test_agent_topology"
+   OS_INFO = "#{TMP_DIR}/os_info"
+   CONF_OMSADMIN = "#{TMP_DIR}/conf_omsadmin"
+-  PROCESS_STATS = "/opt/omi/bin/omicli wql root/scx \"SELECT PercentUserTime, PercentPrivilegedTime, UsedMemory, \
++  PROCESS_STATS = "/var/vcap/packages/omi/opt/bin/omicli wql root/scx \"SELECT PercentUserTime, PercentPrivilegedTime, UsedMemory, \
+ PercentUsedMemory FROM SCX_UnixProcessStatisticalInformation where Name like 'omsagent'\" | grep ="
+ 
+   def setup
+diff --git a/test/code/plugins/in_dsc_monitor_plugintest.rb b/test/code/plugins/in_dsc_monitor_plugintest.rb
+index ff45f91..2c8cf07 100644
+--- a/test/code/plugins/in_dsc_monitor_plugintest.rb
++++ b/test/code/plugins/in_dsc_monitor_plugintest.rb
+@@ -7,8 +7,8 @@ class DscMonitorTest < Test::Unit::TestCase
+ 
+   TMP_DIR = File.dirname(__FILE__) + "/../tmp/test_dscmonitor"
+   CHECK_IF_DPKG = "which dpkg > /dev/null 2>&1; echo $?" 
+-  CHECK_DSC_INSTALL = "dpkg --list omsconfig > /dev/null 2>&1; echo $?"
+-  CHECK_DSC_STATUS = "/opt/microsoft/omsconfig/Scripts/TestDscConfiguration.py"
++  CHECK_DSC_INSTALL = "dpkg --list omsconfig-bosh > /dev/null 2>&1; echo $?"
++  CHECK_DSC_STATUS = "/var/vcap/packages/omsconfig/opt/Scripts/TestDscConfiguration.py"
+ 
+   def setup
+     Fluent::Test.setup
+@@ -35,7 +35,7 @@ class DscMonitorTest < Test::Unit::TestCase
+   end
+ 
+   def test_dsc_install_failure_message
+-    dsc_install_fail_message = "omconfig is not installed, OMS Portal \
++    dsc_install_fail_message = "omsconfig is not installed, OMS Portal \
+ configuration will not be applied and solutions such as Change Tracking and Update Assessment will \
+ not function properly. omsconfig can be installed by rerunning the omsagent installation" 
+ 
+diff --git a/test/perf/syslog_protocol.sh b/test/perf/syslog_protocol.sh
+index 74a4f2e..12b9d55 100755
+--- a/test/perf/syslog_protocol.sh
++++ b/test/perf/syslog_protocol.sh
+@@ -2,20 +2,20 @@ set -e
+ 
+ case "$1" in
+     tcp)
+-        sed -i "s/protocol_type udp/protocol_type tcp/" /etc/opt/microsoft/omsagent/conf/omsagent.conf
++        sed -i "s/protocol_type udp/protocol_type tcp/" /var/vcap/packages/omsagent/etc/conf/omsagent.conf
+         sed -i "s/ @1/ @@1/" /etc/rsyslog.d/95-omsagent.conf
+         service rsyslog restart
+         service omsagent restart
+         ;;
+ 
+     udp)
+-        sed -i "s/protocol_type tcp/protocol_type udp/" /etc/opt/microsoft/omsagent/conf/omsagent.conf
++        sed -i "s/protocol_type tcp/protocol_type udp/" /var/vcap/packages/omsagent/etc/conf/omsagent.conf
+         sed -i "s/ @@1/ @1/" /etc/rsyslog.d/95-omsagent.conf
+         service rsyslog restart
+         service omsagent restart
+         ;;
+     get)
+-        grep protocol_type /etc/opt/microsoft/omsagent/conf/omsagent.conf 
++        grep protocol_type /var/vcap/packages/omsagent/etc/conf/omsagent.conf 
+         ;;
+     *)
+         echo "Unknown argument: '$1'" >&2
